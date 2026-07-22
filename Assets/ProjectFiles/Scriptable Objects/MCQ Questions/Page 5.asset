@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d01fd2d64a9249049aaa77d5c12a82fe, type: 3}
+  m_Name: Page 5
+  m_EditorClassIdentifier: 
+  questionText: What is a destarched plant?
+  referenceImage: {fileID: 0}
+  explanationText: Destarching is the process by which the starch reserves of a plant
+    are depleted by depriving the plant of either light or carbon dioxide to prevent
+    photosynthesis from occurring.
+  options:
+  - Depriving a plant of light.
+  - Depriving a plant of oxygen.
+  - 'Depriving a plant of carbon dioxide. '
+  - 'Either A or C '
+  correctOptionIndex: 3

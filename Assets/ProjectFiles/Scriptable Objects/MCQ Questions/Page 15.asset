@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d01fd2d64a9249049aaa77d5c12a82fe, type: 3}
+  m_Name: Page 15
+  m_EditorClassIdentifier: 
+  questionText: Can you think of a reason for the application of petroleum jelly?
+  referenceImage: {fileID: 0}
+  explanationText: We need an airtight setup to prevent the entry of carbon dioxide
+    into the tube. Petroleum jelly is used to fulfill the purpose.
+  options:
+  - To allow smooth opening of the cork.
+  - 'To make the setup airtight by preventing the entry of CO2. '
+  - Both A and B
+  - None of the above
+  correctOptionIndex: 1
