@@ -7973,19 +7973,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53f8167949ce67347a1f42a94961c857, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PageContentManager
-  pageConfigs:
-  - pageNumber: 26
-    colliders:
-    - {fileID: 2102280713}
-    scripts: []
-    onlyActiveOnThisPage: 1
-    keepActiveInUpcomingPages: 0
-  - pageNumber: 27
-    colliders:
-    - {fileID: 64816362}
-    scripts: []
-    onlyActiveOnThisPage: 1
-    keepActiveInUpcomingPages: 0
 --- !u!1001 &412782843
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15858,7 +15845,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 0, y: 0, z: 0, w: -0.0026035085}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -16185,14 +16172,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac2702f810d12d64fb2a73d4c68edd45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PageEventManager
-  pageEventConfigs:
-  - pageNumber: 26
-    triggerOnlyOnceOnThisPage: 1
-    keepTriggeringInUpcomingPages: 0
-    onPageReached:
-      m_PersistentCalls:
-        m_Calls: []
-    hasTriggered: 0
 --- !u!1001 &1284632423
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17833,14 +17812,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ff6fd4db2dcb4648a7850ae73e9fc86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PageMeshHighlightManager
-  highlightMaterial: {fileID: 2100000, guid: 0d384473d36fdd947a71ee1863bb6390, type: 2}
-  pageConfigs:
-  - pageIndex: 0
-    meshEntries:
-    - meshRenderer: {fileID: 2102280719}
-      autoHighlightOnPageEnter: 1
-    - meshRenderer: {fileID: 2116648626}
-      autoHighlightOnPageEnter: 0
 --- !u!1 &1504503947
 GameObject:
   m_ObjectHideFlags: 0
@@ -23300,11 +23271,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!23 &2102280719 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 9057588125159071988, guid: bbf61fcb3ccd7a347b0470eab235025c, type: 3}
-  m_PrefabInstance: {fileID: 2102280709}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2102280721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23422,11 +23388,6 @@ MonoBehaviour:
 --- !u!1 &2116648624 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -7044777484501727141, guid: bbf61fcb3ccd7a347b0470eab235025c, type: 3}
-  m_PrefabInstance: {fileID: 2102280709}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &2116648626 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -2089942611709717322, guid: bbf61fcb3ccd7a347b0470eab235025c, type: 3}
   m_PrefabInstance: {fileID: 2102280709}
   m_PrefabAsset: {fileID: 0}
 --- !u!65 &2116648629
