@@ -1,78 +1,73 @@
-using UnityEngine;
-using TMPro;
-using UnityEngine.UI;
-using UnityEngine.Events;
-using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 // -----------------------------------------------------------------
-// Handles page navigation AND whether Next is allowed.
+// Page flow manager, same pattern as PotentiometerPageFlowManager:
 //
-// Rule per page:
-//   - autoComplete = true  -> Next is interactable immediately.
-//   - autoComplete = false -> Next stays non-interactable until this
-//                             page has received enough calls to
-//                             ReportProgress() (see requiredCount).
+//   - Pages are just indexes into "pages".
+//   - A page's "type" is whichever role-list its index appears in
+//     (e.g. buttonGroupPages, dragDropPages, mcqPages...).
+//   - Independent interaction MANAGERS elsewhere in the scene (like
+//     ButtonGroupManager below) own ALL the pages of their type and
+//     track per-page state internally. When a page under their care
+//     is solved, they call back ONE matching method here, e.g.
+//     OnButtonGroupDone(). This script never reaches into them.
+//   - ShowPage() re-checks every role-list the current index belongs
+//     to; Next stays locked until every relevant role is completed
+//     for that page.
 //
-// PageButtonGroup (or any future interaction script) just calls
-// PageFlowManager.Instance.ReportProgress() once per button pressed.
-// That's the only connection between the two scripts.
+// To add a new interaction TYPE later (say, drag-drop):
+//   1. Add a new List<int> dragDropPages field.
+//   2. Add a new HashSet<int> completedDragDropPages field.
+//   3. Add one "if (dragDropPages.Contains(index) &&
+//      !completedDragDropPages.Contains(index)) allowNext = false;"
+//      line in ShowPage().
+//   4. Add one public OnDragDropDone() method, same shape as the
+//      others below.
+//   The core loop (Next/Previous/ShowPage/camera) never changes -
+//   only new role lists get added.
 // -----------------------------------------------------------------
 public class PageFlowManager : MonoBehaviour
 {
     public static PageFlowManager Instance { get; private set; }
 
-    [System.Serializable]
-    public class Page
-    {
-        [Tooltip("Label for your own reference only.")]
-        public string pageName;
-
-        public GameObject pageRoot;
-
-        [Header("Camera (optional)")]
-        public Transform cameraPoint;
-        public float cameraSpeed = 4f;
-
-        [Header("Completion")]
-        [Tooltip("ON = Next is interactable right away, nothing to do on this page. OFF = Next stays non-interactable until requiredCount interactions are reported.")]
-        public bool autoComplete = false;
-
-        [Tooltip("Only used when autoComplete is OFF. How many ReportProgress() calls this page needs before Next unlocks (e.g. 5 if there are 5 buttons to press).")]
-        public int requiredCount = 0;
-
-        [Header("Events")]
-        public UnityEvent onPageEnter;
-        public UnityEvent onPageExit;
-
-        [HideInInspector] public int currentCount = 0;
-
-        public bool IsComplete()
-        {
-            if (autoComplete) return true;
-            if (requiredCount <= 0) return false; // not configured yet - Next must NOT unlock by accident
-            return currentCount >= requiredCount;
-        }
-    }
-
     [Header("Pages")]
-    public List<Page> pages;
+    public List<GameObject> pages;
+
+    [Header("Navigation")]
+    public Button nextButton;
+    public Button prevButton;
 
     [Header("Page Counter")]
     public TMP_Text pageCounterText;
     public int pageOffset = 1;
 
-    [Header("Navigation")]
-    public Button nextButton;
-    public Button previousButton;
+    [Header("Camera (optional)")]
+    public CameraMover cameraMover;
 
-    [Header("Camera")]
-    public Transform mainCamera;
-    public float defaultSpeed = 4f;
+    [Header("Interaction Managers (optional)")]
+    [Tooltip("Assign if this project has button-group pages. Same role as resistanceBox in the reference project.")]
+    public ButtonGroupManager buttonGroupManager;
 
-    private int currentIndex = 0;
-    private bool isMoving = false;
-    private Coroutine camRoutine;
+    [Header("Auto Complete Pages")]
+    [Tooltip("Page indexes with nothing to interact with - Next unlocks immediately on entering these, regardless of any manager above.")]
+    public List<int> autoCompletePages;
+
+    int currentPage = 0;
+    bool interactionLocked = false;
+
+    // =========================================================
+    // COMPLETION TRACKING - one HashSet per interaction manager
+    // type. No separate page-index list needed here - each manager
+    // (e.g. ButtonGroupManager) already knows which pages it owns
+    // via its own OwnsPage(index) check, so PageFlowManager just
+    // asks the manager instead of keeping its own duplicate list.
+    // =========================================================
+    HashSet<int> completedButtonGroupPages = new();
+    // HashSet<int> completedDragDropPages = new();
+    // HashSet<int> completedMcqPages = new();
 
     void Awake()
     {
@@ -81,98 +76,100 @@ public class PageFlowManager : MonoBehaviour
 
     void Start()
     {
-        nextButton.onClick.AddListener(NextPage);
-        previousButton.onClick.AddListener(PreviousPage);
-
-        if (mainCamera != null && pages.Count > 0 && pages[0].cameraPoint != null)
-        {
-            mainCamera.position = pages[0].cameraPoint.position;
-            mainCamera.rotation = pages[0].cameraPoint.rotation;
-        }
-
+        nextButton.onClick.AddListener(Next);
+        prevButton.onClick.AddListener(Previous);
         ShowPage(0);
     }
 
-    // Call this from any interaction script (e.g. once per button
-    // pressed) to add progress toward unlocking the CURRENT page.
-    public void ReportProgress()
+    public void Next()
     {
-        pages[currentIndex].currentCount++;
-        UpdateUI();
+        if (interactionLocked) return;
+        if (currentPage < pages.Count - 1)
+        {
+            currentPage++;
+            ShowPage(currentPage);
+            cameraMover?.MoveNext();
+        }
+    }
+
+    public void Previous()
+    {
+        if (interactionLocked) return;
+        if (currentPage > 0)
+        {
+            currentPage--;
+            ShowPage(currentPage);
+            cameraMover?.MovePrevious();
+        }
     }
 
     void ShowPage(int index)
     {
         for (int i = 0; i < pages.Count; i++)
-            pages[i].pageRoot.SetActive(i == index);
+            pages[i].SetActive(i == index);
 
-        var page = pages[index];
+        bool allowNext = true;
 
-        MoveCamera(page);
-        page.onPageEnter?.Invoke();
+        buttonGroupManager?.SetPageContext(index);
 
-        UpdateUI();
-    }
-
-    void NextPage()
-    {
-        if (isMoving || !pages[currentIndex].IsComplete()) return;
-
-        pages[currentIndex].onPageExit?.Invoke();
-
-        if (currentIndex < pages.Count - 1)
+        if (autoCompletePages.Contains(index))
         {
-            currentIndex++;
-            ShowPage(currentIndex);
+            // Nothing to interact with on this page - skip every
+            // other role check below, Next unlocks immediately.
         }
-    }
-
-    void PreviousPage()
-    {
-        if (isMoving || currentIndex == 0) return;
-
-        pages[currentIndex].onPageExit?.Invoke();
-
-        currentIndex--;
-        ShowPage(currentIndex);
-    }
-
-    void MoveCamera(Page page)
-    {
-        if (mainCamera == null || page.cameraPoint == null) return;
-
-        if (camRoutine != null)
-            StopCoroutine(camRoutine);
-
-        float speed = page.cameraSpeed > 0 ? page.cameraSpeed : defaultSpeed;
-        camRoutine = StartCoroutine(SmoothMove(page.cameraPoint, speed));
-    }
-
-    IEnumerator SmoothMove(Transform target, float speed)
-    {
-        isMoving = true;
-        UpdateUI();
-
-        while (Vector3.Distance(mainCamera.position, target.position) > 0.01f)
+        else
         {
-            mainCamera.position = Vector3.Lerp(mainCamera.position, target.position, Time.deltaTime * speed);
-            mainCamera.rotation = Quaternion.Slerp(mainCamera.rotation, target.rotation, Time.deltaTime * speed);
-            yield return null;
+            // ---------------- BUTTON GROUP ----------------
+            if (buttonGroupManager != null && buttonGroupManager.OwnsPage(index) && !completedButtonGroupPages.Contains(index))
+                allowNext = false;
+
+            // Add more role checks here as new interaction managers get
+            // added, e.g.:
+            // if (dragDropManager != null && dragDropManager.OwnsPage(index) && !completedDragDropPages.Contains(index))
+            //     allowNext = false;
         }
 
-        mainCamera.position = target.position;
-        mainCamera.rotation = target.rotation;
-
-        isMoving = false;
-        UpdateUI();
-    }
-
-    void UpdateUI()
-    {
-        nextButton.interactable = pages[currentIndex].IsComplete() && !isMoving;
-        previousButton.interactable = currentIndex > 0 && !isMoving;
+        nextButton.interactable = allowNext && !interactionLocked;
+        prevButton.interactable = index > 0;
 
         if (pageCounterText != null)
-            pageCounterText.text = (currentIndex + pageOffset) + " / " + pages.Count;
+            pageCounterText.text = (index + pageOffset) + " / " + pages.Count;
     }
+
+    // =========================================================
+    // EVENTS FROM INTERACTION MANAGERS
+    // Each interaction manager calls its matching method here when
+    // ITS current page is done. That's the entire integration
+    // surface - nothing else to wire.
+    // =========================================================
+    public void OnButtonGroupDone()
+    {
+        completedButtonGroupPages.Add(currentPage);
+        ShowPage(currentPage);
+    }
+
+    // Add more On___Done() methods here as new interaction types
+    // get built, e.g.:
+    // public void OnDragDropDone()
+    // {
+    //     completedDragDropPages.Add(currentPage);
+    //     ShowPage(currentPage);
+    // }
+
+    // =========================================================
+    // Optional external lock (e.g. while an animation plays)
+    // =========================================================
+    public void LockInteraction()
+    {
+        interactionLocked = true;
+        nextButton.interactable = false;
+    }
+
+    public void UnlockInteraction()
+    {
+        interactionLocked = false;
+        ShowPage(currentPage);
+    }
+
+    public int CurrentPage => currentPage;
 }
