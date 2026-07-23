@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Leaf slide 28
+  m_Name: TestTubeStand_Slide 28
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -16,8 +16,8 @@ AnimationClip:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: {x: 0, y: 0.02659227, z: -0, w: 0.99964637}
+        time: 0.041666668
+        value: {x: 0, y: -0.12967496, z: -0, w: 0.9915566}
         inSlope: {x: 0, y: 0, z: 0, w: 0}
         outSlope: {x: 0, y: 0, z: 0, w: 0}
         tangentMode: 0
@@ -25,46 +25,10 @@ AnimationClip:
         inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
         outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
       - serializedVersion: 3
-        time: 2.0833333
-        value: {x: 0, y: 0.02659227, z: -0, w: 0.99964637}
+        time: 5.416667
+        value: {x: 0, y: -0.12967496, z: -0, w: 0.9915566}
         inSlope: {x: 0, y: 0, z: 0, w: 0}
         outSlope: {x: 0, y: 0, z: 0, w: 0}
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-        outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-      - serializedVersion: 3
-        time: 3.6666667
-        value: {x: 0, y: 0.02659227, z: -0, w: 0.99964637}
-        inSlope: {x: 0, y: 0, z: 0, w: 0}
-        outSlope: {x: 0, y: 0, z: 0, w: 0}
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-        outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-      - serializedVersion: 3
-        time: 3.9166667
-        value: {x: 0.025856405, y: 0.03716815, z: -0.029029718, w: 0.9985526}
-        inSlope: {x: 0.15766132, y: 0.05954213, z: -0.17658435, w: -0.01126529}
-        outSlope: {x: 0.15766132, y: 0.05954213, z: -0.17658435, w: -0.01126529}
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-        outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-      - serializedVersion: 3
-        time: 4.416667
-        value: {x: 0.0239944, y: 0.03646272, z: -0.026944045, w: 0.9986835}
-        inSlope: {x: -0.060236163, y: -0.02296543, z: 0.067484036, w: 0.004100577}
-        outSlope: {x: -0.060236163, y: -0.02296543, z: 0.067484036, w: 0.004100577}
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-        outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
-      - serializedVersion: 3
-        time: 4.9583335
-        value: {x: 0, y: 0.02659227, z: -0, w: 0.99964637}
-        inSlope: {x: -0.005394346, y: -0.0023835988, z: 0.0060720323, w: 0.000064373264}
-        outSlope: {x: -0.005394346, y: -0.0023835988, z: 0.0060720323, w: 0.000064373264}
         tangentMode: 0
         weightedMode: 0
         inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334, w: 0.33333334}
@@ -72,7 +36,7 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: balsam_leaf_/balsam_leaf/balsam_leaf_original
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New
   m_CompressedRotationCurves: []
   m_EulerCurves: []
   m_PositionCurves:
@@ -80,19 +44,37 @@ AnimationClip:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: {x: -0, y: 0, z: 0}
-        inSlope: {x: 0, y: 0, z: 0}
-        outSlope: {x: 0, y: 0, z: 0}
+        time: 0.041666668
+        value: {x: 0.6626778, y: 0.0055181743, z: 0.2608759}
+        inSlope: {x: 3.5527137e-15, y: 1.110223e-16, z: 2.283887e-15}
+        outSlope: {x: 3.5527137e-15, y: 1.110223e-16, z: 2.283887e-15}
         tangentMode: 0
         weightedMode: 0
         inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
         outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
       - serializedVersion: 3
-        time: 4.9583335
-        value: {x: -0, y: 0, z: 0}
-        inSlope: {x: 0, y: 0, z: 0}
-        outSlope: {x: 0, y: 0, z: 0}
+        time: 2.125
+        value: {x: 0.6626778, y: 0.0055181743, z: 0.2608759}
+        inSlope: {x: 1.5225887e-15, y: 4.7580898e-17, z: -4.8215305e-15}
+        outSlope: {x: 3.552707e-15, y: 1.1102209e-16, z: 2.2838829e-15}
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
+        outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
+      - serializedVersion: 3
+        time: 3.75
+        value: {x: 0.6626778, y: 0.0055181743, z: 0.2608759}
+        inSlope: {x: 1.5225887e-15, y: 4.7580898e-17, z: -4.8215305e-15}
+        outSlope: {x: 0.0000025304107, y: 1.1102209e-16, z: 0.0000007418041}
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
+        outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
+      - serializedVersion: 3
+        time: 5.4166665
+        value: {x: 0.32124984, y: 0.0055181743, z: 0.13600524}
+        inSlope: {x: -0.000002744776, y: 4.7581173e-17, z: -0.0000003481093}
+        outSlope: {x: -0.000002744776, y: 4.7581173e-17, z: -0.0000003481093}
         tangentMode: 0
         weightedMode: 0
         inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
@@ -100,13 +82,13 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: balsam_leaf_/balsam_leaf/balsam_leaf_original
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New
   m_ScaleCurves:
   - curve:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
+        time: 0.041666668
         value: {x: 1, y: 1, z: 1}
         inSlope: {x: 0, y: 0, z: 0}
         outSlope: {x: 0, y: 0, z: 0}
@@ -115,7 +97,7 @@ AnimationClip:
         inWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
         outWeight: {x: 0.33333334, y: 0.33333334, z: 0.33333334}
       - serializedVersion: 3
-        time: 4.9583335
+        time: 5.416667
         value: {x: 1, y: 1, z: 1}
         inSlope: {x: 0, y: 0, z: 0}
         outSlope: {x: 0, y: 0, z: 0}
@@ -126,14 +108,14 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    path: balsam_leaf_/balsam_leaf/balsam_leaf_original
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New
   m_FloatCurves:
   - serializedVersion: 2
     curve:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
+        time: 0.041666668
         value: 1
         inSlope: 0
         outSlope: 0
@@ -142,7 +124,7 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 4.9583335
+        time: 5.416667
         value: 1
         inSlope: 0
         outSlope: 0
@@ -154,7 +136,7 @@ AnimationClip:
       m_PostInfinity: 2
       m_RotationOrder: 4
     attribute: m_Enabled
-    path: balsam_leaf_/balsam_leaf/balsam_leaf_original
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/holder_rod
     classID: 25
     script: {fileID: 0}
     flags: 0
@@ -163,8 +145,8 @@ AnimationClip:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: 100
+        time: 0.041666668
+        value: 1
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -172,55 +154,10 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 2.0833333
-        value: 100
+        time: 5.416667
+        value: 1
         inSlope: 0
         outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 3.6666667
-        value: 100
-        inSlope: 0
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 3.9583333
-        value: 89.6
-        inSlope: -76.62233
-        outSlope: -76.62233
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.8750005
-        value: 1.2740648
-        inSlope: -29.688822
-        outSlope: -29.688822
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.916667
-        value: 0.3259235
-        inSlope: -15.288836
-        outSlope: -15.288836
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.9583335
-        value: 0
-        inSlope: -7.822194
-        outSlope: -7.822194
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
@@ -228,9 +165,9 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: blendShape.blendShape5.balsam_leaf8
-    path: balsam_leaf_/balsam_leaf/balsam_leaf_original
-    classID: 137
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/handle
+    classID: 25
     script: {fileID: 0}
     flags: 0
   - serializedVersion: 2
@@ -238,8 +175,8 @@ AnimationClip:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
-        value: 0
+        time: 0.041666668
+        value: 1
         inSlope: 0
         outSlope: 0
         tangentMode: 0
@@ -247,64 +184,10 @@ AnimationClip:
         inWeight: 0.33333334
         outWeight: 0.33333334
       - serializedVersion: 3
-        time: 2.0833333
-        value: 0
+        time: 5.416667
+        value: 1
         inSlope: 0
         outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.0000005
-        value: 0
-        inSlope: 1.07278936e-10
-        outSlope: 1.07278936e-10
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.041667
-        value: 8.9398775e-12
-        inSlope: 7.21265
-        outSlope: 7.21265
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.0833335
-        value: 0.60105187
-        inSlope: 27.948978
-        outSlope: 27.948978
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.2500005
-        value: 13.148044
-        inSlope: 114.50049
-        outSlope: 114.50049
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.916667
-        value: 99.39895
-        inSlope: 27.948776
-        outSlope: 27.948776
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.33333334
-        outWeight: 0.33333334
-      - serializedVersion: 3
-        time: 4.9583335
-        value: 100
-        inSlope: 14.425287
-        outSlope: 14.425287
         tangentMode: 0
         weightedMode: 0
         inWeight: 0.33333334
@@ -312,9 +195,159 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: blendShape.blendShape6.balsam_leaf_original1
-    path: balsam_leaf_/balsam_leaf/balsam_leaf_original
-    classID: 137
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/handle_screw
+    classID: 25
+    script: {fileID: 0}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0.041666668
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 5.416667
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/rod
+    classID: 25
+    script: {fileID: 0}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0.041666668
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 5.416667
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/stand_prt
+    classID: 25
+    script: {fileID: 0}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0.041666668
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 5.416667
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/bolts
+    classID: 25
+    script: {fileID: 0}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0.041666668
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 5.416667
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/Burretholder base blue
+    classID: 25
+    script: {fileID: 0}
+    flags: 0
+  - serializedVersion: 2
+    curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0.041666668
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 5.416667
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: m_Enabled
+    path: Test_Tube_Stand_New/Test_Tube_Stand_New/pCylinder5
+    classID: 25
     script: {fileID: 0}
     flags: 0
   m_PPtrCurves: []
@@ -331,7 +364,7 @@ AnimationClip:
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 4.9583335
+    m_StopTime: 5.416667
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0
