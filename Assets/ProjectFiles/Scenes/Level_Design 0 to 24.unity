@@ -205,13 +205,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0.015000078, y: 1.373, z: 2.12}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -492,6 +492,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: ed0f855f0e0ad8d4cabee3524c138d50, type: 2}
+    - target: {fileID: -7786750426604037603, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.567
+      objectReference: {fileID: 0}
+    - target: {fileID: -7786750426604037603, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.142
+      objectReference: {fileID: 0}
     - target: {fileID: -6293277701200582422, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -516,6 +524,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: ed0f855f0e0ad8d4cabee3524c138d50, type: 2}
+    - target: {fileID: -4931845453988752106, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.057
+      objectReference: {fileID: 0}
+    - target: {fileID: -4931845453988752106, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.0781
+      objectReference: {fileID: 0}
     - target: {fileID: -4851737006899713543, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -528,6 +544,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: ed0f855f0e0ad8d4cabee3524c138d50, type: 2}
+    - target: {fileID: -3440654181376318137, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.859
+      objectReference: {fileID: 0}
+    - target: {fileID: -3440654181376318137, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.553
+      objectReference: {fileID: 0}
     - target: {fileID: -2766545518882871659, guid: 00aadd232fb8f974786a4a3367d4c5f5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
