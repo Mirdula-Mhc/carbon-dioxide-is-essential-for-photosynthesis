@@ -8164,6 +8164,8 @@ MonoBehaviour:
   nextButton: {fileID: 667404827}
   previousButton: {fileID: 667404826}
   pageNumberText: {fileID: 667404828}
+  startPageNumber: 25
+  endPageNumber: 46
   developerIndexMode: 0
   testing: 0
   requiresInteraction: 010101010101010101010101010101010101010101010101000101
@@ -23324,7 +23326,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DraggableObject
   elements:
-  - index: 25
+  - index: 26
     unlocknavigationOnSnap: 0
     highlightObject: {fileID: 2083706203}
     restoreToSnapWhenConditionActive: 0

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 
@@ -12,6 +13,13 @@ public class PageNavigationController : MonoBehaviour
 
     [Header("Page Display")]
     [SerializeField] private TMP_Text pageNumberText;
+
+    [Header("Page Bounds Configurations")]
+    [Tooltip("The starting page number (1-based user facing index).")]
+    [SerializeField] private int startPageNumber = 1;
+
+    [Tooltip("The ending page number (1-based user facing index).")]
+    [SerializeField] private int endPageNumber = 17;
 
     [Header("Developer Settings")]
     [Tooltip("Displays the current page using its actual index (0-based). Disable this before making a build.")]
@@ -37,12 +45,17 @@ public class PageNavigationController : MonoBehaviour
     private readonly HashSet<int> visitedPages = new();
     private readonly HashSet<int> completedPages = new();
 
-    private int NavigationPageCount => Mathf.Max(1, requiresInteraction.Count);
+    // Calculated Bounds Indices (0-based)
+    private int StartIndex => Mathf.Max(0, startPageNumber - 1);
+    private int EndIndex => Mathf.Max(StartIndex, endPageNumber - 1);
+    private int NavigationPageCount => (EndIndex - StartIndex) + 1;
 
     private void Awake()
     {
         Instance = this;
-        currentIndex = Mathf.Clamp(currentIndex, 0, NavigationPageCount - 1);
+
+        // Ensure current index initializes safely within configured start/end bounds
+        currentIndex = Mathf.Clamp(currentIndex, StartIndex, EndIndex);
     }
 
     private void OnEnable()
@@ -84,7 +97,7 @@ public class PageNavigationController : MonoBehaviour
 
     public void NextPage()
     {
-        if (currentIndex >= NavigationPageCount - 1)
+        if (currentIndex >= EndIndex)
             return;
 
         currentIndex++;
@@ -98,7 +111,7 @@ public class PageNavigationController : MonoBehaviour
 
     public void PreviousPage()
     {
-        if (currentIndex <= 0)
+        if (currentIndex <= StartIndex)
             return;
 
         currentIndex--;
@@ -118,6 +131,10 @@ public class PageNavigationController : MonoBehaviour
 
     private void UpdateButtons()
     {
+        // Disable back button at or before start page index
+        if (previousButton)
+            previousButton.interactable = currentIndex > StartIndex;
+
         if (testing)
         {
             SetNormalButtonState();
@@ -130,14 +147,14 @@ public class PageNavigationController : MonoBehaviour
 
         bool isCompleted = completedPages.Contains(currentIndex);
 
-        // Previous behaves normally
-        if (previousButton)
-            previousButton.interactable = currentIndex > 0;
-
-        // Next
+        // Disable next button if reached end page index or if interaction required
         if (nextButton)
         {
-            if (!needsInteraction)
+            if (currentIndex >= EndIndex)
+            {
+                nextButton.interactable = false;
+            }
+            else if (!needsInteraction)
             {
                 nextButton.interactable = true;
             }
@@ -151,10 +168,10 @@ public class PageNavigationController : MonoBehaviour
     private void SetNormalButtonState()
     {
         if (previousButton)
-            previousButton.interactable = currentIndex > 0;
+            previousButton.interactable = currentIndex > StartIndex;
 
         if (nextButton)
-            nextButton.interactable = true;
+            nextButton.interactable = currentIndex < EndIndex;
     }
 
     /// <summary>
@@ -189,7 +206,7 @@ public class PageNavigationController : MonoBehaviour
             ? currentIndex
             : currentIndex + 1;
 
-        pageNumberText.text = $"{displayedPage}/{NavigationPageCount}";
+        pageNumberText.text = $"{displayedPage}/{endPageNumber}";
     }
 
     // Optional helper methods
