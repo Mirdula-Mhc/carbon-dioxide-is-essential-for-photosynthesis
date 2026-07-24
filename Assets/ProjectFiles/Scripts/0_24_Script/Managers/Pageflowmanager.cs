@@ -51,6 +51,12 @@ public class PageFlowManager : MonoBehaviour
     [Tooltip("Assign if this project has button-group pages. Same role as resistanceBox in the reference project.")]
     public ButtonGroupManager buttonGroupManager;
 
+    [Tooltip("Assign if this project has click-to-animate pages (UI or 3D objects that highlight/animate on click).")]
+    public ClickAnimManager clickAnimManager;
+
+    [Tooltip("Assign if some objects should only be visible on specific pages. Not a completion gate - just visibility.")]
+    public PageVisibilityManager pageVisibilityManager;
+
     [Header("Auto Complete Pages")]
     [Tooltip("Page indexes with nothing to interact with - Next unlocks immediately on entering these, regardless of any manager above.")]
     public List<int> autoCompletePages;
@@ -66,6 +72,7 @@ public class PageFlowManager : MonoBehaviour
     // asks the manager instead of keeping its own duplicate list.
     // =========================================================
     HashSet<int> completedButtonGroupPages = new();
+    HashSet<int> completedClickAnimPages = new();
     // HashSet<int> completedDragDropPages = new();
     // HashSet<int> completedMcqPages = new();
 
@@ -111,6 +118,8 @@ public class PageFlowManager : MonoBehaviour
         bool allowNext = true;
 
         buttonGroupManager?.SetPageContext(index);
+        clickAnimManager?.SetPageContext(index);
+        pageVisibilityManager?.SetPageContext(index);
 
         if (autoCompletePages.Contains(index))
         {
@@ -121,6 +130,10 @@ public class PageFlowManager : MonoBehaviour
         {
             // ---------------- BUTTON GROUP ----------------
             if (buttonGroupManager != null && buttonGroupManager.OwnsPage(index) && !completedButtonGroupPages.Contains(index))
+                allowNext = false;
+
+            // ---------------- CLICK ANIM ----------------
+            if (clickAnimManager != null && clickAnimManager.OwnsPage(index) && !completedClickAnimPages.Contains(index))
                 allowNext = false;
 
             // Add more role checks here as new interaction managers get
@@ -145,6 +158,12 @@ public class PageFlowManager : MonoBehaviour
     public void OnButtonGroupDone()
     {
         completedButtonGroupPages.Add(currentPage);
+        ShowPage(currentPage);
+    }
+
+    public void OnClickAnimDone()
+    {
+        completedClickAnimPages.Add(currentPage);
         ShowPage(currentPage);
     }
 
