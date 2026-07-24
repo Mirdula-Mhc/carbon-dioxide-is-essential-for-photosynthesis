@@ -7,6 +7,16 @@ using TMPro;
 
 public class PageNavigationController : MonoBehaviour
 {
+    [System.Serializable]
+    public class PageNavigationRule
+    {
+        [Tooltip("If checked, locks NEXT button until page completion.")]
+        public bool requiresInteraction = false;
+
+        [Tooltip("If checked, locks PREVIOUS button until page completion.")]
+        public bool lockPreviousUntilCompleted = false;
+    }
+
     [Header("Navigation Buttons")]
     [SerializeField] private Button nextButton;
     [SerializeField] private Button previousButton;
@@ -28,7 +38,11 @@ public class PageNavigationController : MonoBehaviour
     [Header("Testing Mode (Ignore Locks)")]
     [SerializeField] private bool testing = false;
 
-    [Header("Requires Interaction Per Page (Navigation Source)")]
+    [Header("Page Navigation Rules Per Index")]
+    [SerializeField] private List<PageNavigationRule> pageRules = new();
+
+    // Deprecated list retained internally to prevent editor serialized data loss during migration
+    [HideInInspector]
     [SerializeField] private List<bool> requiresInteraction = new();
 
     // Events
@@ -49,6 +63,22 @@ public class PageNavigationController : MonoBehaviour
     private int StartIndex => Mathf.Max(0, startPageNumber - 1);
     private int EndIndex => Mathf.Max(StartIndex, endPageNumber - 1);
     private int NavigationPageCount => (EndIndex - StartIndex) + 1;
+
+    private void OnValidate()
+    {
+        // Migrates old requiresInteraction array to pageRules safely in the Unity Inspector
+        if (requiresInteraction != null && requiresInteraction.Count > 0 && pageRules.Count == 0)
+        {
+            for (int i = 0; i < requiresInteraction.Count; i++)
+            {
+                pageRules.Add(new PageNavigationRule
+                {
+                    requiresInteraction = requiresInteraction[i],
+                    lockPreviousUntilCompleted = false
+                });
+            }
+        }
+    }
 
     private void Awake()
     {
@@ -131,30 +161,48 @@ public class PageNavigationController : MonoBehaviour
 
     private void UpdateButtons()
     {
-        // Disable back button at or before start page index
-        if (previousButton)
-            previousButton.interactable = currentIndex > StartIndex;
-
         if (testing)
         {
             SetNormalButtonState();
             return;
         }
 
-        bool needsInteraction =
-            currentIndex < requiresInteraction.Count &&
-            requiresInteraction[currentIndex];
-
         bool isCompleted = completedPages.Contains(currentIndex);
 
-        // Disable next button if reached end page index or if interaction required
+        bool needsNextInteraction = false;
+        bool lockPrevious = false;
+
+        if (currentIndex < pageRules.Count)
+        {
+            needsNextInteraction = pageRules[currentIndex].requiresInteraction;
+            lockPrevious = pageRules[currentIndex].lockPreviousUntilCompleted;
+        }
+
+        // --- PREVIOUS BUTTON LOCK LOGIC ---
+        if (previousButton)
+        {
+            if (currentIndex <= StartIndex)
+            {
+                previousButton.interactable = false;
+            }
+            else if (lockPrevious)
+            {
+                previousButton.interactable = isCompleted;
+            }
+            else
+            {
+                previousButton.interactable = true;
+            }
+        }
+
+        // --- NEXT BUTTON LOCK LOGIC ---
         if (nextButton)
         {
             if (currentIndex >= EndIndex)
             {
                 nextButton.interactable = false;
             }
-            else if (!needsInteraction)
+            else if (!needsNextInteraction)
             {
                 nextButton.interactable = true;
             }

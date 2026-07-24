@@ -43,7 +43,7 @@ Material:
     - _DepthStrength: 4.95
     - _DepthVisibility: 0.4
     - _EdgeStrength: 0.25
-    - _FillHeight: 0.99
+    - _FillHeight: 1.23
     - _FresnelPower: 10
     - _IntersectionFade: 1.4
     - _MeniscusStrength: 0.006
