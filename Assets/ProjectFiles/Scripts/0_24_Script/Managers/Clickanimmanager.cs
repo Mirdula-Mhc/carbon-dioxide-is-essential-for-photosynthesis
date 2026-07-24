@@ -84,9 +84,11 @@ public class ClickAnimManager : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 1000f, clickableLayers))
         {
             var obj = hit.collider.GetComponentInParent<ClickAnimObject>();
+            Debug.Log($"[ClickAnimManager] Raycast hit '{hit.collider.name}', ClickAnimObject found: {obj != null}, isUIObject: {obj?.isUIObject}");
             if (obj == null || obj.isUIObject) return;
 
             var entry = FindEntry(currentPageIndex, obj);
+            Debug.Log($"[ClickAnimManager] currentPageIndex={currentPageIndex}, entry found for this object: {entry != null}");
             if (entry != null)
                 OnObjectClicked(currentPageIndex, entry);
         }
@@ -145,6 +147,8 @@ public class ClickAnimManager : MonoBehaviour
 
     void OnObjectFinished(int pageIndex, ClickAnimObject obj)
     {
+        Debug.Log($"[ClickAnimManager] OnObjectFinished called for page {pageIndex}, object '{obj.name}'");
+
         var state = pageStates[pageIndex];
         if (state.locked) return;
         if (state.finished.Contains(obj)) return;
@@ -152,9 +156,11 @@ public class ClickAnimManager : MonoBehaviour
         state.finished.Add(obj);
 
         var set = pageObjectSets.Find(s => s.pageIndex == pageIndex);
+        Debug.Log($"[ClickAnimManager] Page {pageIndex}: {state.finished.Count}/{set.entries.Count} finished");
         if (state.finished.Count >= set.entries.Count)
         {
             state.locked = true;
+            Debug.Log($"[ClickAnimManager] Page {pageIndex} complete - calling OnClickAnimDone()");
             PageFlowManager.Instance.OnClickAnimDone();
         }
     }

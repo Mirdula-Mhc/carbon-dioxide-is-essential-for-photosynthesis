@@ -100,22 +100,29 @@ public class ClickAnimObject : MonoBehaviour
             while (!done) yield return null;
             source.director.stopped -= Handler;
         }
-        else if (source.legacyAnimation != null && source.clip != null)
+        else if (source.animator != null && source.clip != null)
         {
-            // Legacy Animation component - the clip starts by itself
-            // when Play() is called, no trigger/state machine involved.
-            if (!source.legacyAnimation.GetClip(source.clip.name))
-                source.legacyAnimation.AddClip(source.clip, source.clip.name);
+            source.animator.Play(source.clip.name, 0, 0f);
 
-            source.legacyAnimation.Play(source.clip.name);
+            // Wait one frame so the new state actually takes effect
+            // before we start checking progress against it.
+            yield return null;
 
-            yield return null; // let isPlaying actually turn true before polling
-            while (source.legacyAnimation.IsPlaying(source.clip.name))
-                yield return null;
+            var stateInfo = source.animator.GetCurrentAnimatorStateInfo(0);
+            if (!stateInfo.IsName(source.clip.name))
+            {
+                Debug.LogWarning($"[ClickAnimObject] {name}: Animator has no state named '{source.clip.name}' (must match the clip name exactly). Falling back to a fixed wait of {source.clip.length}s based on the clip's length.");
+                yield return new WaitForSeconds(source.clip.length);
+            }
+            else
+            {
+                while (source.animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f)
+                    yield return null;
+            }
         }
         else
         {
-            Debug.LogWarning($"[ClickAnimObject] {name} AnimationSource has neither a PlayableDirector nor a legacy Animation+clip assigned - completing immediately.");
+            Debug.LogWarning($"[ClickAnimObject] {name} AnimationSource has neither a PlayableDirector nor an Animator+clip assigned - completing immediately.");
         }
 
         onComplete?.Invoke();
@@ -137,11 +144,11 @@ public class ClickAnimObject : MonoBehaviour
 [System.Serializable]
 public class AnimationSource
 {
-    [Tooltip("Use this OR the legacy Animation+clip below, not both.")]
+    [Tooltip("Use this OR the Animator below, not both.")]
     public PlayableDirector director;
 
-    [Header("Legacy Animation component")]
-    [Tooltip("The Animation component on the object (or wherever the clip lives).")]
-    public Animation legacyAnimation;
+    [Header("Animator (clip-driven)")]
+    public Animator animator;
+    [Tooltip("Drag the AnimationClip to play. Its name is used to call animator.Play(clip.name) - so a state with a matching name must exist in the Animator Controller.")]
     public AnimationClip clip;
 }

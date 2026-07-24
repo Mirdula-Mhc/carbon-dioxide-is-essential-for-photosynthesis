@@ -53,8 +53,16 @@ public class ButtonGroupManager : MonoBehaviour
         {
             pageStates[set.pageIndex] = new PageState();
 
+            if (set.buttons == null) continue;
+
             foreach (var b in set.buttons)
             {
+                if (b == null)
+                {
+                    Debug.LogWarning($"[ButtonGroupManager] Page {set.pageIndex} has a null/unassigned Button slot in its buttons list - fix this in the Inspector.");
+                    continue;
+                }
+
                 var capturedButton = b;
                 var capturedPage = set.pageIndex;
                 b.onClick.AddListener(() => OnButtonPressed(capturedPage, capturedButton));
@@ -76,6 +84,8 @@ public class ButtonGroupManager : MonoBehaviour
         // Restore visuals to match saved state (solved or in-progress)
         foreach (var b in set.buttons)
         {
+            if (b == null) continue;
+
             bool isPressed = state.pressed.Contains(b);
             b.interactable = !state.locked;
             SetPressedVisual(b, isPressed);
@@ -99,11 +109,12 @@ public class ButtonGroupManager : MonoBehaviour
         SetPressedVisual(b, true);
 
         var set = pageButtonSets.Find(s => s.pageIndex == pageIndex);
-        if (state.pressed.Count >= set.buttons.Count)
+        int requiredCount = set.buttons.FindAll(btn => btn != null).Count;
+        if (state.pressed.Count >= requiredCount)
         {
             state.locked = true;
             foreach (var button in set.buttons)
-                button.interactable = false;
+                if (button != null) button.interactable = false;
 
             PageFlowManager.Instance.OnButtonGroupDone();
         }
