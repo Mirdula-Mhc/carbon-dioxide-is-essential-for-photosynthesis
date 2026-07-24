@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Material 5
+  m_Name: Test_Tube_Water_Shader
   m_Shader: {fileID: 4800000, guid: 3fccf71763700294a80285684db182ec, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -43,7 +43,7 @@ Material:
     - _DepthStrength: 4.95
     - _DepthVisibility: 0.4
     - _EdgeStrength: 0.25
-    - _FillHeight: 1
+    - _FillHeight: -0.06
     - _FresnelPower: 10
     - _IntersectionFade: 1.4
     - _MeniscusStrength: 0.006
@@ -53,10 +53,10 @@ Material:
     - _RippleSpeed: 1
     - _RippleStrength: 0.003
     - _SurfaceSmooth: 0.002
-    - _Transparency: 0.2
+    - _Transparency: 0.268
     - _WaveScale: 1.23
-    - _WaveSpeed: 0.2
-    - _WaveStrength: 0.015
+    - _WaveSpeed: 0.08
+    - _WaveStrength: 0.00099
     - _WobbleX: 0
     - _WobbleZ: 0
     - _YAxisInfluence: 0.25

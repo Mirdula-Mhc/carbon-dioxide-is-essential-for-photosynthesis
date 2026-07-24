@@ -2,15 +2,16 @@ Shader "Custom/Water_Gravity_Unity6"
 {
     Properties
     {
-        _ShallowColor ("Shallow Tint", Color) = (0.97, 0.99, 1.0, 1)
-        _DeepColor ("Deep Tint", Color) = (0.85, 0.93, 1.0, 1)
+        _ShallowColor ("Shallow Tint", Color) = (0.7, 0.9, 1.0, 1)
+        _DeepColor ("Deep Tint", Color) = (0.1, 0.4, 0.8, 1)
+        _SurfaceRimColor ("Top Edge Color", Color) = (1, 1, 1, 1)
 
-        _Transparency ("Transparency", Range(0,1)) = 0.6
+        _Transparency ("Transparency", Range(0.1, 1)) = 0.75
 
-        _FillHeight ("Water Level", Float) = 0
-        _ContainerPos ("Container Position", Vector) = (0,0,0,0)
+        [Header(Gravity Level)]
+        _FillHeight ("Water Level (Offset from Object Y)", Float) = 0.05
 
-        _FresnelPower ("Rim Light Power", Range(0,10)) = 4
+        _FresnelPower ("Edge/Rim Power", Range(0.5, 10)) = 3.0
         _DepthStrength ("Depth Darkening", Range(0,10)) = 1.5
 
         _WaveStrength ("Tiny Ripples", Range(0,0.02)) = 0.002
@@ -23,12 +24,13 @@ Shader "Custom/Water_Gravity_Unity6"
         Tags
         {
             "RenderType"="Transparent"
-            "Queue"="Transparent"
+            "Queue"="Transparent+10"
             "RenderPipeline"="UniversalPipeline"
         }
 
         Pass
         {
+            Name "ForwardLit"
             Tags { "LightMode"="UniversalForward" }
 
             Blend SrcAlpha OneMinusSrcAlpha
@@ -40,62 +42,95 @@ Shader "Custom/Water_Gravity_Unity6"
             #pragma fragment frag
             #pragma target 2.0
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             struct appdata
             {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
+                float4 positionOS   : POSITION;
+                float3 normalOS     : NORMAL;
             };
 
             struct v2f
             {
-                float4 pos : SV_POSITION;
-                float3 worldPos : TEXCOORD0;
-                float3 normalWS : TEXCOORD1;
-                float3 viewDir : TEXCOORD2;
+                float4 positionCS   : SV_POSITION;
+                float3 positionWS   : TEXCOORD0;
+                float3 normalWS     : TEXCOORD1;
+                float3 viewDirWS    : TEXCOORD2;
             };
 
-            float4 _ShallowColor, _DeepColor;
-            float _FillHeight, _FresnelPower, _DepthStrength;
-            float _WaveStrength, _WaveSpeed, _WaveScale;
-            float4 _ContainerPos;
-            float _Transparency;
+            CBUFFER_START(UnityPerMaterial)
+                half4 _ShallowColor;
+                half4 _DeepColor;
+                half4 _SurfaceRimColor;
+                float _FillHeight;
+                float _FresnelPower;
+                float _DepthStrength;
+                float _WaveStrength;
+                float _WaveSpeed;
+                float _WaveScale;
+                half _Transparency;
+            CBUFFER_END
 
-            v2f vert (appdata v)
+            v2f vert (appdata input)
             {
-                v2f o;
+                v2f output;
 
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-                o.normalWS = UnityObjectToWorldNormal(v.normal);
-                o.viewDir = normalize(_WorldSpaceCameraPos - o.worldPos);
+                VertexPositionInputs positionInputs = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = positionInputs.positionCS;
+                output.positionWS = positionInputs.positionWS;
 
-                return o;
+                VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS);
+                output.normalWS = normalInputs.normalWS;
+
+                output.viewDirWS = GetWorldSpaceViewDir(positionInputs.positionWS);
+
+                return output;
             }
 
-            half4 frag (v2f i) : SV_Target
+            half4 frag (v2f input, FRONT_FACE_TYPE facing : SV_IsFrontFace) : SV_Target
             {
-                half3 gravityUp = half3(0,1,0);
+                // World space gravity vector
+                float3 gravityUp = float3(0, 1, 0);
 
-                half ripple = sin((i.worldPos.x + i.worldPos.z) * _WaveScale
-                                  + _Time.y * _WaveSpeed) * _WaveStrength;
+                // Animated ripple in world space
+                float ripple = sin((input.positionWS.x + input.positionWS.z) * _WaveScale + _Time.y * _WaveSpeed) * _WaveStrength;
 
-                half height = dot(i.worldPos - _ContainerPos.xyz, gravityUp);
-                half surface = _FillHeight + ripple;
+                // --- GRAVITY WORLD-SPACE CLIP MATH ---
+                // Get the container's world position origin (Pivot)
+                float3 objectWorldPos = GetAbsolutePositionWS(UNITY_MATRIX_M[3].xyz);
 
-                clip(surface - height);
+                // Calculate vertical world height relative to object's pivot point along true Gravity (0,1,0)
+                float heightRelativeToPivot = dot(input.positionWS - objectWorldPos, gravityUp);
 
-                half depth = saturate((surface - height) * _DepthStrength);
+                // Surface cut level aligned with gravity
+                float surfaceLevel = _FillHeight + ripple;
+                float distToSurface = surfaceLevel - heightRelativeToPivot;
+
+                // Clip pixels above gravity level
+                clip(distToSurface);
+
+                // Water depth coloring along gravity
+                float depth = saturate(distToSurface * _DepthStrength);
                 half3 waterColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, depth);
 
-                half fresnel = pow(1 - saturate(dot(normalize(i.normalWS),
-                                                    normalize(i.viewDir))), _FresnelPower);
+                // Normal inversion for inside container visibility
+                float3 N = normalize(input.normalWS);
+                N = facing ? N : -N;
 
-                half3 finalCol = waterColor + fresnel * 0.08;
+                float3 V = normalize(input.viewDirWS);
+                float NdotV = saturate(dot(N, V));
 
-                // Transparency controlled by Inspector slider
-                return half4(finalCol, _Transparency);
+                // Rim light / fresnel outline
+                half fresnel = pow(1.0 - NdotV, _FresnelPower);
+
+                // Surface line rim
+                float surfaceEdge = smoothstep(0.015, 0.00, distToSurface);
+                half3 finalCol = lerp(waterColor + (fresnel * 0.3), _SurfaceRimColor.rgb, surfaceEdge);
+
+                half alpha = max(_Transparency, fresnel * 0.5);
+                alpha = max(alpha, surfaceEdge);
+
+                return half4(finalCol, alpha);
             }
 
             ENDHLSL
