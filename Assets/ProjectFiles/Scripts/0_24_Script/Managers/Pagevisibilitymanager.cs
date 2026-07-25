@@ -52,11 +52,27 @@ public class PageVisibilityManager : MonoBehaviour
     // page changes.
     public void SetPageContext(int pageIndex)
     {
+        Debug.Log("PageVisibilityManager -> Page " + pageIndex);
+        Dictionary<GameObject, bool> objectStates = new();
+
         foreach (var set in pageObjectSets)
         {
-            bool shouldBeActive = set.pageIndex == pageIndex;
+            bool activeForThisPage = set.pageIndex == pageIndex;
+
             foreach (var obj in set.objects)
-                if (obj != null) obj.SetActive(shouldBeActive);
+            {
+                if (obj == null)
+                    continue;
+
+                if (!objectStates.ContainsKey(obj))
+                    objectStates[obj] = false;
+
+                if (activeForThisPage)
+                    objectStates[obj] = true;
+            }
         }
+
+        foreach (var pair in objectStates)
+            pair.Key.SetActive(pair.Value);
     }
 }
