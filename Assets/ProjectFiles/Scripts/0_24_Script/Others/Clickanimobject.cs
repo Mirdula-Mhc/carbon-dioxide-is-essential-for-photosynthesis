@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 // -----------------------------------------------------------------
 // One clickable object. Deliberately owns NO animation data itself -
@@ -20,7 +21,8 @@ using System.Collections;
 // Setup - 3D object:
 //   1. Put this on the object itself (needs a Collider).
 //   2. isUIObject = false.
-//   3. Assign targetRenderer + highlightMaterial.
+//   3. Assign targetRenderers (all meshes to highlight together, e.g.
+//      a multi-mesh object) + highlightMaterial.
 //   Click detection is handled by ClickAnimManager's raycast - no
 //   extra wiring needed here.
 //
@@ -34,9 +36,10 @@ public class ClickAnimObject : MonoBehaviour
     public bool isUIObject = false;
 
     [Header("3D Highlight (ignored for UI objects)")]
-    public Renderer targetRenderer;
+    [Tooltip("All renderers to highlight together (e.g. a multi-mesh object). Every one of these gets the highlight material while waiting to be clicked.")]
+    public List<Renderer> targetRenderers = new List<Renderer>();
     public Material highlightMaterial;
-    Material originalMaterial;
+    List<Material> originalMaterials;
 
     // Set by ClickAnimManager right before/while this page is active,
     // so OnClickedUI() (fired by Unity's Button component with no
@@ -51,12 +54,17 @@ public class ClickAnimObject : MonoBehaviour
     {
         busy = false;
 
-        if (isUIObject || targetRenderer == null || highlightMaterial == null) return;
+        if (isUIObject || targetRenderers == null || targetRenderers.Count == 0 || highlightMaterial == null) return;
 
-        if (originalMaterial == null)
-            originalMaterial = targetRenderer.material;
+        if (originalMaterials == null)
+        {
+            originalMaterials = new List<Material>();
+            foreach (var r in targetRenderers)
+                originalMaterials.Add(r != null ? r.material : null);
+        }
 
-        targetRenderer.material = highlightMaterial;
+        foreach (var r in targetRenderers)
+            if (r != null) r.material = highlightMaterial;
     }
 
     // Wired to a UI Button's onClick in the Inspector. Uses whatever
@@ -76,8 +84,12 @@ public class ClickAnimObject : MonoBehaviour
         if (busy) return;
         busy = true;
 
-        if (!isUIObject && targetRenderer != null && originalMaterial != null)
-            targetRenderer.material = originalMaterial; // remove highlight
+        if (!isUIObject && targetRenderers != null && originalMaterials != null)
+        {
+            for (int i = 0; i < targetRenderers.Count; i++)
+                if (targetRenderers[i] != null && originalMaterials[i] != null)
+                    targetRenderers[i].material = originalMaterials[i]; // remove highlight
+        }
 
         StartCoroutine(source != null ? source.Play(this, onComplete) : NullSourceFallback(onComplete));
     }
