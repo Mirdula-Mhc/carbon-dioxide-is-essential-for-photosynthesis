@@ -1,15 +1,15 @@
-Shader "Custom/Water_Gravity_Unity6"
+Shader "Custom/Water_Gravity_Container_Unity6"
 {
     Properties
     {
         _ShallowColor ("Shallow Tint", Color) = (0.7, 0.9, 1.0, 1)
         _DeepColor ("Deep Tint", Color) = (0.1, 0.4, 0.8, 1)
-        _SurfaceRimColor ("Top Edge Color", Color) = (1, 1, 1, 1)
+        _SurfaceRimColor ("Top Edge Color (Supports Alpha)", Color) = (1, 1, 1, 1)
 
         _Transparency ("Transparency", Range(0.1, 1)) = 0.75
 
-        [Header(Gravity Level)]
-        _FillHeight ("Water Level (Offset from Object Y)", Float) = 0.05
+        [Header(Container Relative Fill Level)]
+        _FillHeight ("Water Level (Height above pivot)", Float) = 0.05
 
         _FresnelPower ("Edge/Rim Power", Range(0.5, 10)) = 3.0
         _DepthStrength ("Depth Darkening", Range(0,10)) = 1.5
@@ -89,31 +89,30 @@ Shader "Custom/Water_Gravity_Unity6"
 
             half4 frag (v2f input, FRONT_FACE_TYPE facing : SV_IsFrontFace) : SV_Target
             {
-                // World space gravity vector
+                // World Gravity Direction (Always points straight up)
                 float3 gravityUp = float3(0, 1, 0);
 
-                // Animated ripple in world space
+                // Animated surface ripple
                 float ripple = sin((input.positionWS.x + input.positionWS.z) * _WaveScale + _Time.y * _WaveSpeed) * _WaveStrength;
 
-                // --- GRAVITY WORLD-SPACE CLIP MATH ---
-                // Get the container's world position origin (Pivot)
-                float3 objectWorldPos = GetAbsolutePositionWS(UNITY_MATRIX_M[3].xyz);
+                // 1. Get the current Object's World Origin (Pivot) dynamically from matrix
+                float3 containerWorldPivot = UNITY_MATRIX_M._m03_m13_m23;
 
-                // Calculate vertical world height relative to object's pivot point along true Gravity (0,1,0)
-                float heightRelativeToPivot = dot(input.positionWS - objectWorldPos, gravityUp);
+                // 2. Measure fragment height relative to the container pivot, BUT along global World Gravity Y (0,1,0)
+                float heightRelativeToContainerPivot = dot(input.positionWS - containerWorldPivot, gravityUp);
 
-                // Surface cut level aligned with gravity
+                // 3. Clip surface
                 float surfaceLevel = _FillHeight + ripple;
-                float distToSurface = surfaceLevel - heightRelativeToPivot;
+                float distToSurface = surfaceLevel - heightRelativeToContainerPivot;
 
-                // Clip pixels above gravity level
+                // Clip pixels above water line
                 clip(distToSurface);
 
-                // Water depth coloring along gravity
+                // Water depth color blend along gravity vector
                 float depth = saturate(distToSurface * _DepthStrength);
                 half3 waterColor = lerp(_ShallowColor.rgb, _DeepColor.rgb, depth);
 
-                // Normal inversion for inside container visibility
+                // Handle double-sided rendering (inside container wall lighting)
                 float3 N = normalize(input.normalWS);
                 N = facing ? N : -N;
 
@@ -127,8 +126,10 @@ Shader "Custom/Water_Gravity_Unity6"
                 float surfaceEdge = smoothstep(0.015, 0.00, distToSurface);
                 half3 finalCol = lerp(waterColor + (fresnel * 0.3), _SurfaceRimColor.rgb, surfaceEdge);
 
-                half alpha = max(_Transparency, fresnel * 0.5);
-                alpha = max(alpha, surfaceEdge);
+                // Dynamic Alpha calculation taking top edge color alpha (_SurfaceRimColor.a) into account
+                half baseAlpha = max(_Transparency, fresnel * 0.5);
+                half targetEdgeAlpha = _SurfaceRimColor.a;
+                half alpha = lerp(baseAlpha, targetEdgeAlpha, surfaceEdge);
 
                 return half4(finalCol, alpha);
             }

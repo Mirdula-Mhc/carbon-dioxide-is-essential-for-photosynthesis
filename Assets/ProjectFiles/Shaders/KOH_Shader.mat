@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Material 5
+  m_Name: KOH_Shader
   m_Shader: {fileID: 4800000, guid: 3fccf71763700294a80285684db182ec, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -43,7 +43,7 @@ Material:
     - _DepthStrength: 4.95
     - _DepthVisibility: 0.4
     - _EdgeStrength: 0.25
-    - _FillHeight: 0.13
+    - _FillHeight: 0.06
     - _FresnelPower: 10
     - _IntersectionFade: 1.4
     - _MeniscusStrength: 0.006
@@ -53,18 +53,18 @@ Material:
     - _RippleSpeed: 1
     - _RippleStrength: 0.003
     - _SurfaceSmooth: 0.002
-    - _Transparency: 0.12
+    - _Transparency: 1
     - _WaveScale: 1.23
-    - _WaveSpeed: 0.2
-    - _WaveStrength: 0.015
+    - _WaveSpeed: 0.08
+    - _WaveStrength: 0.00099
     - _WobbleX: 0
     - _WobbleZ: 0
     - _YAxisInfluence: 0.25
     m_Colors:
     - _ContainerPos: {r: 0, g: 0, b: 0, a: 0}
-    - _DeepColor: {r: 1, g: 1, b: 1, a: 0.20392157}
-    - _ShallowColor: {r: 0.79215693, g: 0.7960785, b: 0.8000001, a: 0.015686275}
-    - _SurfaceRimColor: {r: 0.7075472, g: 0.7075472, b: 0.7075472, a: 0.5882353}
+    - _DeepColor: {r: 1, g: 1, b: 1, a: 0.6431373}
+    - _ShallowColor: {r: 0.79215693, g: 0.7960785, b: 0.8000001, a: 0.74509805}
+    - _SurfaceRimColor: {r: 1, g: 1, b: 1, a: 1}
     - _WaterColor: {r: 0.75294125, g: 0.74509805, b: 0.74509805, a: 1}
     - _WaterTint: {r: 0.9, g: 0.96999997, b: 1, a: 0.15}
   m_BuildTextureStacks: []

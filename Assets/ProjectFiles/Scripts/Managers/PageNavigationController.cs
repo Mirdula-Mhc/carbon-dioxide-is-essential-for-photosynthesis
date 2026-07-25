@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -40,6 +41,13 @@ public class PageNavigationController : MonoBehaviour
 
     [Header("Page Navigation Rules Per Index")]
     [SerializeField] private List<PageNavigationRule> pageRules = new();
+
+    [Header("Set Swap Events")]
+    [Tooltip("Triggered when clicking Back/Previous while on Page 25 (Start Page). Use this to swap to previous set.")]
+    [SerializeField] private UnityEvent OnPage25PreviousClicked;
+
+    [Tooltip("Triggered when clicking Next while on Page 34 (End Page). Use this to swap to next set.")]
+    [SerializeField] private UnityEvent OnPage34NextClicked;
 
     // Deprecated list retained internally to prevent editor serialized data loss during migration
     [HideInInspector]
@@ -128,7 +136,11 @@ public class PageNavigationController : MonoBehaviour
     public void NextPage()
     {
         if (currentIndex >= EndIndex)
+        {
+            // Triggers set swap event when Next is clicked on Page 34 (End Page)
+            OnPage34NextClicked?.Invoke();
             return;
+        }
 
         currentIndex++;
 
@@ -142,7 +154,11 @@ public class PageNavigationController : MonoBehaviour
     public void PreviousPage()
     {
         if (currentIndex <= StartIndex)
+        {
+            // Triggers set swap event when Back is clicked on Page 25 (Start Page)
+            OnPage25PreviousClicked?.Invoke();
             return;
+        }
 
         currentIndex--;
 
@@ -183,7 +199,8 @@ public class PageNavigationController : MonoBehaviour
         {
             if (currentIndex <= StartIndex)
             {
-                previousButton.interactable = false;
+                // Page 25 (StartIndex) - Back button stays interactable so set swap event can be clicked
+                previousButton.interactable = true;
             }
             else if (lockPrevious)
             {
@@ -200,7 +217,8 @@ public class PageNavigationController : MonoBehaviour
         {
             if (currentIndex >= EndIndex)
             {
-                nextButton.interactable = false;
+                // Page 34 (EndIndex) - Next button stays interactable so set swap event can be clicked
+                nextButton.interactable = true;
             }
             else if (!needsNextInteraction)
             {
@@ -216,10 +234,10 @@ public class PageNavigationController : MonoBehaviour
     private void SetNormalButtonState()
     {
         if (previousButton)
-            previousButton.interactable = currentIndex > StartIndex;
+            previousButton.interactable = true;
 
         if (nextButton)
-            nextButton.interactable = currentIndex < EndIndex;
+            nextButton.interactable = true;
     }
 
     /// <summary>
