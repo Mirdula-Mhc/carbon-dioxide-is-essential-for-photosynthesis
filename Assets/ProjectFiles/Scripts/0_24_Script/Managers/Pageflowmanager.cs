@@ -57,6 +57,9 @@ public class PageFlowManager : MonoBehaviour
     [Tooltip("Assign if some objects should only be visible on specific pages. Not a completion gate - just visibility.")]
     public PageVisibilityManager pageVisibilityManager;
 
+    [Tooltip("Assign if this project has pages that auto-play an animation on enter, blocking Next until it finishes.")]
+    public PageEnterAnimManager pageEnterAnimManager;
+
     [Header("Auto Complete Pages")]
     [Tooltip("Page indexes with nothing to interact with - Next unlocks immediately on entering these, regardless of any manager above.")]
     public List<int> autoCompletePages;
@@ -120,6 +123,7 @@ public class PageFlowManager : MonoBehaviour
         buttonGroupManager?.SetPageContext(index);
         clickAnimManager?.SetPageContext(index);
         pageVisibilityManager?.SetPageContext(index);
+        pageEnterAnimManager?.SetPageContext(index);
 
         if (autoCompletePages.Contains(index))
         {
@@ -134,6 +138,14 @@ public class PageFlowManager : MonoBehaviour
 
             // ---------------- CLICK ANIM ----------------
             if (clickAnimManager != null && clickAnimManager.OwnsPage(index) && !completedClickAnimPages.Contains(index))
+                allowNext = false;
+
+            // ---------------- PAGE ENTER ANIM ----------------
+            // Uses IsPageDone() instead of a HashSet, unlike the other
+            // two roles - this manager can re-lock a page on revisit
+            // (replayOnRevisit), so "ever completed once" isn't a
+            // valid check here; it must ask the manager's live state.
+            if (pageEnterAnimManager != null && pageEnterAnimManager.OwnsPage(index) && !pageEnterAnimManager.IsPageDone(index))
                 allowNext = false;
 
             // Add more role checks here as new interaction managers get
@@ -164,6 +176,14 @@ public class PageFlowManager : MonoBehaviour
     public void OnClickAnimDone()
     {
         completedClickAnimPages.Add(currentPage);
+        ShowPage(currentPage);
+    }
+
+    public void OnPageEnterAnimDone()
+    {
+        // No HashSet needed here - PageEnterAnimManager tracks its own
+        // completion state (including re-locking on revisit), so we
+        // just re-run ShowPage to refresh Next's interactable state.
         ShowPage(currentPage);
     }
 

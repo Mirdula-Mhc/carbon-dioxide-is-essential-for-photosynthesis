@@ -79,53 +79,14 @@ public class ClickAnimObject : MonoBehaviour
         if (!isUIObject && targetRenderer != null && originalMaterial != null)
             targetRenderer.material = originalMaterial; // remove highlight
 
-        StartCoroutine(PlayAndWait(source, onComplete));
+        StartCoroutine(source != null ? source.Play(this, onComplete) : NullSourceFallback(onComplete));
     }
 
-    IEnumerator PlayAndWait(AnimationSource source, Action onComplete)
+    IEnumerator NullSourceFallback(Action onComplete)
     {
-        if (source == null)
-        {
-            Debug.LogWarning($"[ClickAnimObject] {name} clicked with no AnimationSource assigned - completing immediately.");
-            onComplete?.Invoke();
-            yield break;
-        }
-
-        if (source.director != null)
-        {
-            bool done = false;
-            void Handler(PlayableDirector d) { done = true; }
-            source.director.stopped += Handler;
-            source.director.Play();
-            while (!done) yield return null;
-            source.director.stopped -= Handler;
-        }
-        else if (source.animator != null && source.clip != null)
-        {
-            source.animator.Play(source.clip.name, 0, 0f);
-
-            // Wait one frame so the new state actually takes effect
-            // before we start checking progress against it.
-            yield return null;
-
-            var stateInfo = source.animator.GetCurrentAnimatorStateInfo(0);
-            if (!stateInfo.IsName(source.clip.name))
-            {
-                Debug.LogWarning($"[ClickAnimObject] {name}: Animator has no state named '{source.clip.name}' (must match the clip name exactly). Falling back to a fixed wait of {source.clip.length}s based on the clip's length.");
-                yield return new WaitForSeconds(source.clip.length);
-            }
-            else
-            {
-                while (source.animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f)
-                    yield return null;
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[ClickAnimObject] {name} AnimationSource has neither a PlayableDirector nor an Animator+clip assigned - completing immediately.");
-        }
-
+        Debug.LogWarning($"[ClickAnimObject] {name} clicked with no AnimationSource assigned - completing immediately.");
         onComplete?.Invoke();
+        yield break;
     }
 
     // Call if a page can be revisited and should require the click again.
@@ -140,6 +101,11 @@ public class ClickAnimObject : MonoBehaviour
 // Which animation to play for a given (page, object) pairing. Lives
 // on the manager's per-page entries, NOT on ClickAnimObject, so the
 // same object can have a different one of these per page.
+//
+// Play() is the single shared playback+completion-wait routine, used
+// by both ClickAnimObject (click-triggered) and PageEnterAnimManager
+// (auto-triggered on page enter) - one implementation, no duplicated
+// logic to keep in sync between the two.
 // -----------------------------------------------------------------
 [System.Serializable]
 public class AnimationSource
@@ -151,4 +117,46 @@ public class AnimationSource
     public Animator animator;
     [Tooltip("Drag the AnimationClip to play. Its name is used to call animator.Play(clip.name) - so a state with a matching name must exist in the Animator Controller.")]
     public AnimationClip clip;
+
+    // "runner" is whatever MonoBehaviour should own the coroutine
+    // (needs to be something active in the scene - pass "this" from
+    // the calling script).
+    public IEnumerator Play(MonoBehaviour runner, Action onComplete)
+    {
+        if (director != null)
+        {
+            bool done = false;
+            void Handler(PlayableDirector d) { done = true; }
+            director.stopped += Handler;
+            director.Play();
+            while (!done) yield return null;
+            director.stopped -= Handler;
+        }
+        else if (animator != null && clip != null)
+        {
+            animator.Play(clip.name, 0, 0f);
+
+            // Wait one frame so the new state actually takes effect
+            // before we start checking progress against it.
+            yield return null;
+
+            var stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            if (!stateInfo.IsName(clip.name))
+            {
+                Debug.LogWarning($"[AnimationSource] {runner.name}: Animator has no state named '{clip.name}' (must match the clip name exactly). Falling back to a fixed wait of {clip.length}s based on the clip's length.");
+                yield return new WaitForSeconds(clip.length);
+            }
+            else
+            {
+                while (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 1f)
+                    yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[AnimationSource] {runner.name}: AnimationSource has neither a PlayableDirector nor an Animator+clip assigned - completing immediately.");
+        }
+
+        onComplete?.Invoke();
+    }
 }
