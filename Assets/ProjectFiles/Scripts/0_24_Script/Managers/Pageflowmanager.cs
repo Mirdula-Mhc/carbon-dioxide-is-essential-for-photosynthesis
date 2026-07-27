@@ -71,6 +71,8 @@ public class PageFlowManager : MonoBehaviour
     [Tooltip("The next module/scene's root GameObject. Gets SetActive(true) at the same moment ownRootObject is disabled. Leave both fields empty if this flow doesn't hand off to anything.")]
     public GameObject nextModuleRootObject;
 
+
+
     int currentPage = 0;
     bool interactionLocked = false;
 
@@ -126,11 +128,38 @@ public class PageFlowManager : MonoBehaviour
     // both are left empty (e.g. this flow doesn't hand off to anything).
     void HandOffToNextModule()
     {
+        Debug.Log("[HANDOFF] Starting");
+
+        if (cameraMover != null)
+        {
+            Debug.Log(
+                "[HANDOFF] Module 1 CameraMover camAnimator = " +
+                (cameraMover.camAnimator != null
+                    ? GetHierarchyPath(cameraMover.camAnimator.transform)
+                    : "NULL")
+            );
+
+            cameraMover.PrepareForModuleHandoff();
+        }
+
         if (nextModuleRootObject != null)
             nextModuleRootObject.SetActive(true);
 
         if (ownRootObject != null)
             ownRootObject.SetActive(false);
+    }
+
+    private string GetHierarchyPath(Transform t)
+    {
+        string path = t.name;
+
+        while (t.parent != null)
+        {
+            t = t.parent;
+            path = t.name + "/" + path;
+        }
+
+        return path;
     }
 
     public void Previous()

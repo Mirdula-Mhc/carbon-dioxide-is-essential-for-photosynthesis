@@ -121,6 +121,30 @@ public class CameraMover : MonoBehaviour
         Debug.Log("[CameraMover] EndExternalControl - Lerp/Animator toggling resumed for next page move.");
     }
 
+    // Call once, at end-of-flow handoff (PageFlowManager.HandOffToNextModule()).
+    // Stops any move currently in progress and permanently blocks every
+    // future MoveNext()/MovePrevious()/MoveTo() call from doing anything -
+    // this simulation's root is about to be disabled, so there's no page
+    // left to move the camera FOR, and the next module may want to own
+    // the camera itself without this script fighting it.
+    //
+    // Deliberately does NOT touch camAnimator.enabled - whatever state
+    // it's in when handoff happens is left alone, since the next module
+    // (or the outgoing page's own animation) may still care about it.
+    public void DisableMover()
+    {
+        externalControlActive = true; // blocks any MoveTo() called after this point
+
+        if (moveRoutine != null)
+        {
+            StopCoroutine(moveRoutine);
+            moveRoutine = null;
+        }
+
+        enabled = false; // stops Update/LateUpdate if this script ever gains one
+        Debug.Log("[CameraMover] DisableMover - handoff complete, this script will no longer move the camera.");
+    }
+
     // pointIndex doubles as the page index, assuming "points" is
     // built 1:1 with PageFlowManager's "pages" list (same order, one
     // entry each). If that's not true for your project, this check
@@ -181,5 +205,39 @@ public class CameraMover : MonoBehaviour
             camAnimator.enabled = true;
 
         onComplete?.Invoke();
+    }
+
+    public void PrepareForModuleHandoff()
+    {
+        Debug.Log("[CameraMover] Preparing camera for module handoff.");
+
+        externalControlActive = true;
+
+        // Stop our movement.
+        if (moveRoutine != null)
+        {
+            StopCoroutine(moveRoutine);
+            moveRoutine = null;
+        }
+
+        // Stop Module 1's camera Animator from continuing to drive Transform.
+        if (camAnimator != null)
+        {
+            camAnimator.enabled = false;
+        }
+
+        // Stop Module 1's Camera from rendering.
+        if (cam != null)
+        {
+            Camera cameraComponent = cam.GetComponent<Camera>();
+
+            if (cameraComponent != null)
+            {
+                cameraComponent.enabled = false;
+                Debug.Log($"[CameraMover] Disabled outgoing camera: {cam.name}");
+            }
+        }
+
+        enabled = false;
     }
 }
