@@ -64,6 +64,13 @@ public class PageFlowManager : MonoBehaviour
     [Tooltip("Page indexes with nothing to interact with - Next unlocks immediately on entering these, regardless of any manager above.")]
     public List<int> autoCompletePages;
 
+    [Header("End-of-Flow Handoff (optional)")]
+    [Tooltip("This entire simulation's own root GameObject (i.e. everything under a single parent). Gets SetActive(false) when Next is pressed on the very last page.")]
+    public GameObject ownRootObject;
+
+    [Tooltip("The next module/scene's root GameObject. Gets SetActive(true) at the same moment ownRootObject is disabled. Leave both fields empty if this flow doesn't hand off to anything.")]
+    public GameObject nextModuleRootObject;
+
     int currentPage = 0;
     bool interactionLocked = false;
 
@@ -105,6 +112,25 @@ public class PageFlowManager : MonoBehaviour
                 cameraMover.MoveNext(UnlockInteraction);
             }
         }
+        else if (nextButton.interactable)
+        {
+            // Already on the last page and it's fully complete (Next
+            // wouldn't be interactable otherwise) - hand off to
+            // whatever comes after this whole simulation.
+            HandOffToNextModule();
+        }
+    }
+
+    // Disables this simulation's own root object and enables the next
+    // module's root, if both are assigned. Safe to call even if one or
+    // both are left empty (e.g. this flow doesn't hand off to anything).
+    void HandOffToNextModule()
+    {
+        if (nextModuleRootObject != null)
+            nextModuleRootObject.SetActive(true);
+
+        if (ownRootObject != null)
+            ownRootObject.SetActive(false);
     }
 
     public void Previous()
