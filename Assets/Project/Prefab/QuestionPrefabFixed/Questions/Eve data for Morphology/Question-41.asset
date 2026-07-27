@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d01fd2d64a9249049aaa77d5c12a82fe, type: 3}
+  m_Name: Question-41
+  m_EditorClassIdentifier: 
+  questionText: What changes did you notice in the leaf?
+  referenceImage: {fileID: 0}
+  explanationText: 'Due to the presence of carbon dioxide and sunlight, photosynthesis
+    took place in the part of the leaf outside the boiling tube, resulting in the
+    formation of starch which changed the colour of the leaf into blue black.
+
+'
+  options:
+  - 'Part of a leaf that was present in the tube turns blue-black in colour. '
+  - 'Part of a leaf that was present outside the tube turns blue-black in colour. '
+  - 'Full leaf turn blue-black in colour. '
+  - 'No changes in the colour of the leaf. '
+  correctOptionIndex: 1
