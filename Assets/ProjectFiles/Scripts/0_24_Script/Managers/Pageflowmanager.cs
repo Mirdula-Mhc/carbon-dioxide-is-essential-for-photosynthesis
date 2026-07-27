@@ -43,6 +43,7 @@ public class PageFlowManager : MonoBehaviour
     [Header("Page Counter")]
     public TMP_Text pageCounterText;
     public int pageOffset = 1;
+    public int totalPageCount = 43;
 
     [Header("Camera (optional)")]
     public CameraMover cameraMover;
@@ -181,51 +182,113 @@ public class PageFlowManager : MonoBehaviour
     void ShowPage(int index)
     {
         for (int i = 0; i < pages.Count; i++)
-            pages[i].SetActive(i == index);
-
-        bool allowNext = true;
+        {
+            if (pages[i] != null)
+                pages[i].SetActive(i == index);
+        }
 
         buttonGroupManager?.SetPageContext(index);
         clickAnimManager?.SetPageContext(index);
         pageVisibilityManager?.SetPageContext(index);
         pageEnterAnimManager?.SetPageContext(index);
 
-        if (autoCompletePages.Contains(index))
+        UpdatePageCounter();
+
+        RefreshNavigation();
+    }
+    void UpdatePageCounter()
+    {
+        if (pageCounterText == null)
+            return;
+
+        int displayedPage = currentPage + pageOffset;
+
+        pageCounterText.text = $"{displayedPage}/{totalPageCount}";
+    }
+    void RefreshNavigation()
+    {
+        // During camera movement, both navigation buttons stay locked.
+        if (interactionLocked)
         {
-            // Nothing to interact with on this page - skip every
-            // other role check below, Next unlocks immediately.
+            nextButton.interactable = false;
+            prevButton.interactable = false;
+            return;
+        }
+
+        bool isAutoComplete =
+            autoCompletePages != null &&
+            autoCompletePages.Contains(currentPage);
+
+        bool hasButtonGroup =
+            buttonGroupManager != null &&
+            buttonGroupManager.OwnsPage(currentPage);
+
+        bool hasClickAnim =
+            clickAnimManager != null &&
+            clickAnimManager.OwnsPage(currentPage);
+
+        bool hasPageEnterAnim =
+            pageEnterAnimManager != null &&
+            pageEnterAnimManager.OwnsPage(currentPage);
+
+        bool hasAnyGate =
+            hasButtonGroup ||
+            hasClickAnim ||
+            hasPageEnterAnim;
+
+        // LOCKED BY DEFAULT.
+        bool pageComplete = false;
+
+        // Explicitly configured as a no-interaction page.
+        if (isAutoComplete)
+        {
+            pageComplete = true;
+        }
+        else if (hasAnyGate)
+        {
+            pageComplete = true;
+
+            if (hasButtonGroup &&
+                !completedButtonGroupPages.Contains(currentPage))
+            {
+                pageComplete = false;
+            }
+
+            if (hasClickAnim &&
+                !completedClickAnimPages.Contains(currentPage))
+            {
+                pageComplete = false;
+            }
+
+            if (hasPageEnterAnim &&
+                !pageEnterAnimManager.IsPageDone(currentPage))
+            {
+                pageComplete = false;
+            }
         }
         else
         {
-            // ---------------- BUTTON GROUP ----------------
-            if (buttonGroupManager != null && buttonGroupManager.OwnsPage(index) && !completedButtonGroupPages.Contains(index))
-                allowNext = false;
-
-            // ---------------- CLICK ANIM ----------------
-            if (clickAnimManager != null && clickAnimManager.OwnsPage(index) && !completedClickAnimPages.Contains(index))
-                allowNext = false;
-
-            // ---------------- PAGE ENTER ANIM ----------------
-            // Uses IsPageDone() instead of a HashSet, unlike the other
-            // two roles - this manager can re-lock a page on revisit
-            // (replayOnRevisit), so "ever completed once" isn't a
-            // valid check here; it must ask the manager's live state.
-            if (pageEnterAnimManager != null && pageEnterAnimManager.OwnsPage(index) && !pageEnterAnimManager.IsPageDone(index))
-                allowNext = false;
-
-            // Add more role checks here as new interaction managers get
-            // added, e.g.:
-            // if (dragDropManager != null && dragDropManager.OwnsPage(index) && !completedDragDropPages.Contains(index))
-            //     allowNext = false;
+            Debug.LogWarning(
+                $"[PageFlowManager] Page {currentPage} has NO completion rule. " +
+                "Next remains locked. Add it to Auto Complete Pages or configure an interaction."
+            );
         }
 
-        nextButton.interactable = allowNext && !interactionLocked;
-        prevButton.interactable = index > 0 && allowNext && !interactionLocked;
+        nextButton.interactable = pageComplete;
 
-        if (pageCounterText != null)
-            pageCounterText.text = (index + pageOffset) + " / " + pages.Count;
+        // Previous is based on navigation position,
+        // not whether the current page has been completed.
+        prevButton.interactable = currentPage > 0;
+
+        Debug.Log(
+            $"[PageFlow] Page {currentPage} | " +
+            $"Complete={pageComplete} | " +
+            $"Auto={isAutoComplete} | " +
+            $"ButtonGroup={hasButtonGroup} | " +
+            $"ClickAnim={hasClickAnim} | " +
+            $"EnterAnim={hasPageEnterAnim}"
+        );
     }
-
     // =========================================================
     // EVENTS FROM INTERACTION MANAGERS
     // Each interaction manager calls its matching method here when
@@ -235,21 +298,32 @@ public class PageFlowManager : MonoBehaviour
     public void OnButtonGroupDone()
     {
         completedButtonGroupPages.Add(currentPage);
-        ShowPage(currentPage);
+
+        Debug.Log(
+            $"[PageFlow] Button group gate completed for page {currentPage}"
+        );
+
+        RefreshNavigation();
     }
 
     public void OnClickAnimDone()
     {
         completedClickAnimPages.Add(currentPage);
-        ShowPage(currentPage);
+
+        Debug.Log(
+            $"[PageFlow] Click animation gate completed for page {currentPage}"
+        );
+
+        RefreshNavigation();
     }
 
     public void OnPageEnterAnimDone()
     {
-        // No HashSet needed here - PageEnterAnimManager tracks its own
-        // completion state (including re-locking on revisit), so we
-        // just re-run ShowPage to refresh Next's interactable state.
-        ShowPage(currentPage);
+        Debug.Log(
+            $"[PageFlow] Page-enter animation gate completed for page {currentPage}"
+        );
+
+        RefreshNavigation();
     }
 
     // Add more On___Done() methods here as new interaction types
@@ -263,17 +337,16 @@ public class PageFlowManager : MonoBehaviour
     // =========================================================
     // Optional external lock (e.g. while an animation plays)
     // =========================================================
-    public void LockInteraction()
+    void LockInteraction()
     {
         interactionLocked = true;
-        nextButton.interactable = false;
-        prevButton.interactable = false;
+        RefreshNavigation();
     }
 
-    public void UnlockInteraction()
+    void UnlockInteraction()
     {
         interactionLocked = false;
-        ShowPage(currentPage);
+        RefreshNavigation();
     }
 
     public int CurrentPage => currentPage;
