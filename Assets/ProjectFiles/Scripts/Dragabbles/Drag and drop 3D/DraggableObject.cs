@@ -51,6 +51,8 @@ public class DraggableObject : MonoBehaviour
 
     [Header("Drag Events")]
     [SerializeField] private UnityEvent OnDragStart;
+    [SerializeField] private UnityEvent OnDragging;
+    [SerializeField] private UnityEvent OnDragEnd;
 
     private PageNavigationController pageNavigationController;
 
@@ -141,6 +143,12 @@ public class DraggableObject : MonoBehaviour
 
         var element = elements[index];
 
+        // Safely grab collider reference if it wasn't caught during Awake
+        if (element.highlightObject != null && element.highlightCollider == null)
+        {
+            element.highlightCollider = element.highlightObject.GetComponent<Collider>();
+        }
+
         // ✅ NEW LOGIC: First-time ignore
         if (element.enableFirstIgnore && !element.hasVisitedOnce)
         {
@@ -224,6 +232,7 @@ public class DraggableObject : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit))
         {
+            // Strictly check direct hit on object's collider surface
             if (hit.collider == objectCollider)
             {
                 isDragging = true;
@@ -232,7 +241,10 @@ public class DraggableObject : MonoBehaviour
                 if (animator != null && animator.enabled)
                     animator.enabled = false;
 
-                objectScreenZ = mainCam.WorldToScreenPoint(transform.position).z;
+                // Lock screen depth directly at the collider's hit point
+                objectScreenZ = mainCam.WorldToScreenPoint(hit.point).z;
+
+                // Offset calculated relative to hit point for exact center/cursor touch tracking
                 offset = transform.position - GetWorldPosition(inputPos);
 
                 if (element.highlightObject != null)
@@ -244,6 +256,7 @@ public class DraggableObject : MonoBehaviour
     void Drag(Vector3 inputPos)
     {
         transform.position = GetWorldPosition(inputPos) + offset;
+        OnDragging?.Invoke();
     }
 
     void Release()
@@ -251,6 +264,7 @@ public class DraggableObject : MonoBehaviour
         if (!isDragging) return;
 
         isDragging = false;
+        OnDragEnd?.Invoke();
 
         if (activeElementIndex < 0)
         {
@@ -260,6 +274,12 @@ public class DraggableObject : MonoBehaviour
         }
 
         var element = elements[activeElementIndex];
+
+        // Fallback: Lazy fetch collider if missing
+        if (element.highlightCollider == null && element.highlightObject != null)
+        {
+            element.highlightCollider = element.highlightObject.GetComponent<Collider>();
+        }
 
         if (element.highlightCollider == null)
         {
@@ -346,6 +366,7 @@ public class DraggableObject : MonoBehaviour
             if (element.highlightObject != null)
                 element.highlightObject.SetActive(false);
 
+            // Trigger OnSnapCompleted cleanly when snapping motion settles
             element.OnSnapCompleted?.Invoke();
 
             if (pageNavigationController != null && element.unlocknavigationOnSnap)

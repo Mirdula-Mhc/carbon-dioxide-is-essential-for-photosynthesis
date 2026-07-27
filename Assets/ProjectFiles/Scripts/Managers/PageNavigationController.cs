@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +8,16 @@ using TMPro;
 
 public class PageNavigationController : MonoBehaviour
 {
+    [System.Serializable]
+    public class PageNavigationRule
+    {
+        [Tooltip("If checked, locks NEXT button until page completion.")]
+        public bool requiresInteraction = false;
+
+        [Tooltip("If checked, locks PREVIOUS button until page completion.")]
+        public bool lockPreviousUntilCompleted = false;
+    }
+
     [Header("Navigation Buttons")]
     [SerializeField] private Button nextButton;
     [SerializeField] private Button previousButton;
@@ -15,11 +26,14 @@ public class PageNavigationController : MonoBehaviour
     [SerializeField] private TMP_Text pageNumberText;
 
     [Header("Page Bounds Configurations")]
-    [Tooltip("The starting page number (1-based user facing index).")]
-    [SerializeField] private int startPageNumber = 1;
+    [Tooltip("The starting page number (1-based user facing index, e.g., 25).")]
+    [SerializeField] private int startPageNumber = 25;
 
-    [Tooltip("The ending page number (1-based user facing index).")]
-    [SerializeField] private int endPageNumber = 17;
+    [Tooltip("The page that triggers the next set event (1-based, e.g., 34).")]
+    [SerializeField] private int eventTriggerPageNumber = 34;
+
+    [Tooltip("The total displayed end page number (1-based user facing index, e.g., 43).")]
+    [SerializeField] private int endPageNumber = 43;
 
     [Header("Developer Settings")]
     [Tooltip("Displays the current page using its actual index (0-based). Disable this before making a build.")]
@@ -28,7 +42,31 @@ public class PageNavigationController : MonoBehaviour
     [Header("Testing Mode (Ignore Locks)")]
     [SerializeField] private bool testing = false;
 
-    [Header("Requires Interaction Per Page (Navigation Source)")]
+    [Header("Direct Set Swapping (Instant / No Delay)")]
+    [Tooltip("The active set GameObject to disable when leaving page 34.")]
+    [SerializeField] private GameObject currentSetObject;
+
+    [Tooltip("The next set GameObject to enable when leaving page 34.")]
+    [SerializeField] private GameObject nextSetObject;
+
+    [Tooltip("The previous set GameObject to enable when going back past page 25.")]
+    [SerializeField] private GameObject previousSetObject;
+
+    [Tooltip("Target GameObject to destroy automatically when moving from Page 25 to 26.")]
+    [SerializeField] private GameObject destroyObjectOnPage26;
+
+    [Header("Page Navigation Rules Per Index")]
+    [SerializeField] private List<PageNavigationRule> pageRules = new();
+
+    [Header("Set Swap Events (Optional / SFX / Secondary Logic)")]
+    [Tooltip("Triggered when clicking Back/Previous while on Start Page (Page 25).")]
+    [SerializeField] private UnityEvent OnPage25PreviousClicked;
+
+    [Tooltip("Triggered when clicking Next while on Event Trigger Page (Page 34).")]
+    [SerializeField] private UnityEvent OnPage34NextClicked;
+
+    // Deprecated list retained internally to prevent editor serialized data loss during migration
+    [HideInInspector]
     [SerializeField] private List<bool> requiresInteraction = new();
 
     // Events
@@ -39,7 +77,7 @@ public class PageNavigationController : MonoBehaviour
     public static int CurrentIndex { get; private set; }
     public static PageNavigationController Instance { get; private set; }
 
-    [SerializeField] private int currentIndex = 0;
+    [SerializeField] private int currentIndex = 24; // 0-based for Page 25
 
     // Runtime State
     private readonly HashSet<int> visitedPages = new();
@@ -47,15 +85,30 @@ public class PageNavigationController : MonoBehaviour
 
     // Calculated Bounds Indices (0-based)
     private int StartIndex => Mathf.Max(0, startPageNumber - 1);
-    private int EndIndex => Mathf.Max(StartIndex, endPageNumber - 1);
-    private int NavigationPageCount => (EndIndex - StartIndex) + 1;
+    private int TriggerIndex => Mathf.Max(StartIndex, eventTriggerPageNumber - 1);
+
+    private void OnValidate()
+    {
+        // Safe migration of legacy list
+        if (requiresInteraction != null && requiresInteraction.Count > 0 && pageRules.Count == 0)
+        {
+            for (int i = 0; i < requiresInteraction.Count; i++)
+            {
+                pageRules.Add(new PageNavigationRule
+                {
+                    requiresInteraction = requiresInteraction[i],
+                    lockPreviousUntilCompleted = false
+                });
+            }
+        }
+    }
 
     private void Awake()
     {
         Instance = this;
 
-        // Ensure current index initializes safely within configured start/end bounds
-        currentIndex = Mathf.Clamp(currentIndex, StartIndex, EndIndex);
+        // Ensure current index initializes safely within configured bounds
+        currentIndex = Mathf.Clamp(currentIndex, StartIndex, TriggerIndex);
     }
 
     private void OnEnable()
@@ -97,8 +150,22 @@ public class PageNavigationController : MonoBehaviour
 
     public void NextPage()
     {
-        if (currentIndex >= EndIndex)
+        // Reached Page 34 - Instant Swap
+        if (currentIndex >= TriggerIndex)
+        {
+            if (nextSetObject) nextSetObject.SetActive(true);
+            if (currentSetObject) currentSetObject.SetActive(false);
+
+            OnPage34NextClicked?.Invoke();
             return;
+        }
+
+        // Check if moving from Page 25 (0-based index 24) to Page 26 (0-based index 25)
+        if (currentIndex == StartIndex && destroyObjectOnPage26 != null)
+        {
+            Destroy(destroyObjectOnPage26);
+            destroyObjectOnPage26 = null; // Clear reference after destroying
+        }
 
         currentIndex++;
 
@@ -111,8 +178,15 @@ public class PageNavigationController : MonoBehaviour
 
     public void PreviousPage()
     {
+        // Reached Page 25 - Instant Swap Back
         if (currentIndex <= StartIndex)
+        {
+            if (previousSetObject) previousSetObject.SetActive(true);
+            if (currentSetObject) currentSetObject.SetActive(false);
+
+            OnPage25PreviousClicked?.Invoke();
             return;
+        }
 
         currentIndex--;
 
@@ -131,36 +205,51 @@ public class PageNavigationController : MonoBehaviour
 
     private void UpdateButtons()
     {
-        // Disable back button at or before start page index
-        if (previousButton)
-            previousButton.interactable = currentIndex > StartIndex;
-
         if (testing)
         {
             SetNormalButtonState();
             return;
         }
 
-        bool needsInteraction =
-            currentIndex < requiresInteraction.Count &&
-            requiresInteraction[currentIndex];
-
         bool isCompleted = completedPages.Contains(currentIndex);
 
-        // Disable next button if reached end page index or if interaction required
-        if (nextButton)
+        bool needsNextInteraction = false;
+        bool lockPrevious = false;
+
+        if (currentIndex < pageRules.Count)
         {
-            if (currentIndex >= EndIndex)
+            needsNextInteraction = pageRules[currentIndex].requiresInteraction;
+            lockPrevious = pageRules[currentIndex].lockPreviousUntilCompleted;
+        }
+
+        // --- PREVIOUS BUTTON LOCK LOGIC ---
+        if (previousButton)
+        {
+            if (currentIndex <= StartIndex)
             {
-                nextButton.interactable = false;
+                previousButton.interactable = true;
             }
-            else if (!needsInteraction)
+            else if (lockPrevious)
             {
-                nextButton.interactable = true;
+                previousButton.interactable = isCompleted;
             }
             else
             {
+                previousButton.interactable = true;
+            }
+        }
+
+        // --- NEXT BUTTON LOCK LOGIC ---
+        if (nextButton)
+        {
+            // Even on the trigger page (Page 34), require completion if defined by rules
+            if (needsNextInteraction)
+            {
                 nextButton.interactable = isCompleted;
+            }
+            else
+            {
+                nextButton.interactable = true;
             }
         }
     }
@@ -168,35 +257,23 @@ public class PageNavigationController : MonoBehaviour
     private void SetNormalButtonState()
     {
         if (previousButton)
-            previousButton.interactable = currentIndex > StartIndex;
+            previousButton.interactable = true;
 
         if (nextButton)
-            nextButton.interactable = currentIndex < EndIndex;
+            nextButton.interactable = true;
     }
 
-    /// <summary>
-    /// Called by the existing event.
-    /// Marks the current page as completed, then refreshes navigation.
-    /// </summary>
     public void EnableNavigationButtons()
     {
         completedPages.Add(currentIndex);
         UpdateButtons();
     }
 
-    /// <summary>
-    /// Existing API. No dependent scripts need to change.
-    /// </summary>
     public static void RequestNavigationUnlock()
     {
         OnNavigationUnlockRequested?.Invoke();
     }
 
-    /// <summary>
-    /// Updates the page number display.
-    /// Developer Mode ON  : 0/17, 1/17, ..., 16/17
-    /// Developer Mode OFF : 1/17, 2/17, ..., 17/17
-    /// </summary>
     private void UpdateDisplay()
     {
         if (!pageNumberText)
@@ -206,10 +283,9 @@ public class PageNavigationController : MonoBehaviour
             ? currentIndex
             : currentIndex + 1;
 
+        // Displays format: 25/43 ... 34/43
         pageNumberText.text = $"{displayedPage}/{endPageNumber}";
     }
-
-    // Optional helper methods
 
     public bool IsPageVisited(int pageIndex)
     {

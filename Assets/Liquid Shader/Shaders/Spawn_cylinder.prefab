@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5367169859301202187
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4159086872223395375}
+  - component: {fileID: 5958154400334940675}
+  - component: {fileID: 9042992919082327923}
+  m_Layer: 0
+  m_Name: Spawn_cylinder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4159086872223395375
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5367169859301202187}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.0015662011, y: -0.001701868, z: -0.001696606, w: 0.9999959}
+  m_LocalPosition: {x: -0.014, y: -0.722, z: 0.014}
+  m_LocalScale: {x: 0.92177975, y: 0.9217796, z: 0.9217798}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0.179, y: -0.195, z: -0.195}
+--- !u!33 &5958154400334940675
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5367169859301202187}
+  m_Mesh: {fileID: -5597002278806442958, guid: b84390f49691c014fb9386d7cdb62f4d, type: 3}
+--- !u!114 &9042992919082327923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5367169859301202187}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 675beb5ba024b3e4b83615a2dfeb93cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 6579976592607067165, guid: 6f8a70ae64c71554c8c0747d8bbadfa3, type: 3}
+  radius: 0.007
+  height: 0.03
+  autoStartOnEnable: 1
+  minScale: 0.02
+  maxScale: 0.07
+  moveDuration: 2
+  spawnInterval: 0.1
+  triggerDelay: 2
+  delayedObjects:
+  - {fileID: 0}
+  delayedObjectsEnableTime: 3
