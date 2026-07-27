@@ -103,23 +103,24 @@ public class PageFlowManager : MonoBehaviour
 
     public void Next()
     {
-        if (interactionLocked) return;
+        if (interactionLocked)
+            return;
+
         if (currentPage < pages.Count - 1)
         {
+            // Lock BEFORE entering the new page.
+            if (cameraMover != null)
+                LockInteraction();
+
             currentPage++;
+
             ShowPage(currentPage);
 
             if (cameraMover != null)
-            {
-                LockInteraction();
                 cameraMover.MoveNext(UnlockInteraction);
-            }
         }
         else if (nextButton.interactable)
         {
-            // Already on the last page and it's fully complete (Next
-            // wouldn't be interactable otherwise) - hand off to
-            // whatever comes after this whole simulation.
             HandOffToNextModule();
         }
     }
@@ -165,17 +166,20 @@ public class PageFlowManager : MonoBehaviour
 
     public void Previous()
     {
-        if (interactionLocked) return;
+        if (interactionLocked)
+            return;
+
         if (currentPage > 0)
         {
+            if (cameraMover != null)
+                LockInteraction();
+
             currentPage--;
+
             ShowPage(currentPage);
 
             if (cameraMover != null)
-            {
-                LockInteraction();
                 cameraMover.MovePrevious(UnlockInteraction);
-            }
         }
     }
 

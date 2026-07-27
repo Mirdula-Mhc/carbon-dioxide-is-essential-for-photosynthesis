@@ -678,15 +678,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6301836219978211177, guid: b81672a122e262e45bb925b3d49eb63a, type: 3}
       propertyPath: pageDisabledObjectSets.Array.data[12].objects.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6301836219978211177, guid: b81672a122e262e45bb925b3d49eb63a, type: 3}
       propertyPath: pageDisabledObjectSets.Array.data[13].objects.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6301836219978211177, guid: b81672a122e262e45bb925b3d49eb63a, type: 3}
       propertyPath: pageDisabledObjectSets.Array.data[14].objects.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6301836219978211177, guid: b81672a122e262e45bb925b3d49eb63a, type: 3}
       propertyPath: pageDisabledObjectSets.Array.data[15].objects.Array.size
