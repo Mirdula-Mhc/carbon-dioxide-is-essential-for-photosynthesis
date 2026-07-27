@@ -48,6 +48,20 @@ public class ClickAnimObject : MonoBehaviour
     [HideInInspector] public AnimationSource pendingSource;
     [HideInInspector] public Action pendingOnComplete;
 
+    // Also set by ClickAnimManager alongside pendingSource - lets
+    // OnClickedUI() tell CameraMover to stand down right at the actual
+    // moment of the click (not earlier, at page-entry time, since the
+    // user may sit on the page a while before clicking). Null/false
+    // means this click doesn't touch the camera at all.
+    [HideInInspector] public bool pendingDrivesCamera;
+    [HideInInspector] public CameraMover pendingCameraMover;
+
+    // Also set by ClickAnimManager alongside pendingSource - the
+    // coroutine host to run the wait-for-completion coroutine on
+    // (see TriggerClick's coroutineHost parameter for why this
+    // matters). Null falls back to running it on this object.
+    [HideInInspector] public MonoBehaviour pendingCoroutineHost;
+
     bool busy = false; // prevents double-clicks while an animation is playing
 
     public void Highlight()
@@ -72,14 +86,37 @@ public class ClickAnimObject : MonoBehaviour
     // page - see ClickAnimManager.SetPageContext().
     public void OnClickedUI()
     {
-        TriggerClick(pendingSource, pendingOnComplete);
+        if (pendingDrivesCamera && pendingCameraMover != null)
+        {
+            pendingCameraMover.BeginExternalControl();
+            var originalComplete = pendingOnComplete;
+            TriggerClick(pendingSource, () =>
+            {
+                pendingCameraMover.EndExternalControl();
+                originalComplete?.Invoke();
+            }, pendingCoroutineHost);
+        }
+        else
+        {
+            TriggerClick(pendingSource, pendingOnComplete, pendingCoroutineHost);
+        }
     }
 
     // Called directly by ClickAnimManager for 3D raycast clicks,
     // passing the correct source for the current page explicitly
     // (no reliance on pendingSource, since the manager already has
     // it in hand at the point of the raycast hit).
-    public void TriggerClick(AnimationSource source, Action onComplete)
+    //
+    // "coroutineHost" lets the caller run the wait-for-completion
+    // coroutine on a MonoBehaviour that's guaranteed to stay active
+    // for the whole page (e.g. ClickAnimManager) instead of on this
+    // object. This matters because some Timelines deactivate the
+    // clicked object itself partway through (via an Activation
+    // Track) - if the coroutine were running on this object, Unity
+    // silently kills it the instant the GameObject deactivates,
+    // so onComplete never fires and the page never unlocks. Pass
+    // null to keep the old behaviour (coroutine runs on this object).
+    public void TriggerClick(AnimationSource source, Action onComplete, MonoBehaviour coroutineHost = null)
     {
         if (busy) return;
         busy = true;
@@ -91,7 +128,8 @@ public class ClickAnimObject : MonoBehaviour
                     targetRenderers[i].material = originalMaterials[i]; // remove highlight
         }
 
-        StartCoroutine(source != null ? source.Play(this, onComplete) : NullSourceFallback(onComplete));
+        var host = coroutineHost != null ? coroutineHost : this;
+        host.StartCoroutine(source != null ? source.Play(this, onComplete) : NullSourceFallback(onComplete));
     }
 
     IEnumerator NullSourceFallback(Action onComplete)
@@ -138,9 +176,16 @@ public class AnimationSource
         if (director != null)
         {
             bool done = false;
-            void Handler(PlayableDirector d) { done = true; }
+            void Handler(PlayableDirector d) { done = true; Debug.Log($"[AnimationSource] director.stopped fired for '{director.gameObject.name}'."); }
             director.stopped += Handler;
+
+            // TEMP DIAGNOSTIC - remove once the stuck-completion issue is found.
+            Debug.Log($"[AnimationSource] Playing director '{director.gameObject.name}': state={director.state}, duration={director.duration}, time={director.time}, playableAsset={(director.playableAsset != null ? director.playableAsset.name : "NULL")}");
+
             director.Play();
+
+            Debug.Log($"[AnimationSource] After Play() call: state={director.state}, time={director.time}");
+
             while (!done) yield return null;
             director.stopped -= Handler;
         }

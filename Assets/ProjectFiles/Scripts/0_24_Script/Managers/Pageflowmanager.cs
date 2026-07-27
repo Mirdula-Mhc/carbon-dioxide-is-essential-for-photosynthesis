@@ -98,7 +98,12 @@ public class PageFlowManager : MonoBehaviour
         {
             currentPage++;
             ShowPage(currentPage);
-            cameraMover?.MoveNext();
+
+            if (cameraMover != null)
+            {
+                LockInteraction();
+                cameraMover.MoveNext(UnlockInteraction);
+            }
         }
     }
 
@@ -109,7 +114,12 @@ public class PageFlowManager : MonoBehaviour
         {
             currentPage--;
             ShowPage(currentPage);
-            cameraMover?.MovePrevious();
+
+            if (cameraMover != null)
+            {
+                LockInteraction();
+                cameraMover.MovePrevious(UnlockInteraction);
+            }
         }
     }
 
@@ -155,7 +165,7 @@ public class PageFlowManager : MonoBehaviour
         }
 
         nextButton.interactable = allowNext && !interactionLocked;
-        prevButton.interactable = index > 0;
+        prevButton.interactable = index > 0 && allowNext && !interactionLocked;
 
         if (pageCounterText != null)
             pageCounterText.text = (index + pageOffset) + " / " + pages.Count;
@@ -202,6 +212,7 @@ public class PageFlowManager : MonoBehaviour
     {
         interactionLocked = true;
         nextButton.interactable = false;
+        prevButton.interactable = false;
     }
 
     public void UnlockInteraction()
@@ -212,5 +223,5 @@ public class PageFlowManager : MonoBehaviour
 
     public int CurrentPage => currentPage;
 
-   
+
 }

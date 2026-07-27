@@ -34,6 +34,9 @@ public class ClickAnimManager : MonoBehaviour
     {
         public ClickAnimObject clickObject;
         public AnimationSource animation;
+
+        [Tooltip("Check this if 'animation' also moves/rotates the camera (e.g. its Animator/PlayableDirector has a track on the camera transform). While this entry's animation plays, CameraMover is told to hand off control so it doesn't fight the click-anim or snap the camera back afterward.")]
+        public bool drivesCamera = false;
     }
 
     [System.Serializable]
@@ -50,6 +53,10 @@ public class ClickAnimManager : MonoBehaviour
     [Tooltip("Camera used to raycast for 3D object clicks. Leave empty to use Camera.main.")]
     public Camera raycastCamera;
     public LayerMask clickableLayers = ~0;
+
+    [Header("Camera Coordination (optional)")]
+    [Tooltip("Assign if any click-anim entries have drivesCamera checked. Told to stand down while those play, and handed back control once they finish.")]
+    public CameraMover cameraMover;
 
     class PageState
     {
@@ -120,6 +127,24 @@ public class ClickAnimManager : MonoBehaviour
             {
                 entry.clickObject.pendingSource = entry.animation;
                 entry.clickObject.pendingOnComplete = () => OnObjectFinished(pageIndex, entry.clickObject);
+
+                // UI clicks go straight from Button.onClick -> OnClickedUI()
+                // -> TriggerClick(), bypassing OnObjectClicked() below (that
+                // path is 3D-raycast only). ClickAnimObject exposes
+                // pendingDrivesCamera/pendingCameraMover so OnClickedUI()
+                // can call BeginExternalControl() itself at the actual
+                // moment of the click, not here at page-entry time (the
+                // user may sit on this page for a while before clicking).
+                entry.clickObject.pendingDrivesCamera = entry.drivesCamera;
+                entry.clickObject.pendingCameraMover = entry.drivesCamera ? cameraMover : null;
+
+                // Same reasoning as the 3D path: run the wait-for-
+                // completion coroutine on this manager (never gets
+                // deactivated) rather than on the clicked object
+                // itself (which some Timelines deactivate mid-play
+                // via an Activation Track, silently killing the
+                // coroutine and leaving the page permanently locked).
+                entry.clickObject.pendingCoroutineHost = this;
             }
         }
     }
@@ -142,12 +167,30 @@ public class ClickAnimManager : MonoBehaviour
     // callback captures the correct pageIndex/entry pairing.
     void OnObjectClicked(int pageIndex, ObjectEntry entry)
     {
-        entry.clickObject.TriggerClick(entry.animation, () => OnObjectFinished(pageIndex, entry.clickObject));
+        if (entry.drivesCamera && cameraMover != null)
+            cameraMover.BeginExternalControl();
+
+        // Pass "this" (ClickAnimManager) as the coroutine host - it
+        // never gets deactivated by a page's Timeline, unlike the
+        // clicked object itself, which some Timelines turn off via
+        // an Activation Track partway through their own playback.
+        entry.clickObject.TriggerClick(entry.animation, () => OnObjectFinished(pageIndex, entry.clickObject), this);
     }
 
     void OnObjectFinished(int pageIndex, ClickAnimObject obj)
     {
         Debug.Log($"[ClickAnimManager] OnObjectFinished called for page {pageIndex}, object '{obj.name}'");
+
+        // 3D path only: OnObjectClicked() below called BeginExternalControl()
+        // directly (it has the ObjectEntry in hand), so end it here to match.
+        // UI path handles its own Begin/End inside ClickAnimObject.OnClickedUI(),
+        // so this would double-call End for UI objects if not guarded - but
+        // EndExternalControl() is idempotent (just sets a bool), so it's safe
+        // either way.
+        var set = pageObjectSets.Find(s => s.pageIndex == pageIndex);
+        var finishedEntry = set?.entries.Find(e => e.clickObject == obj);
+        if (finishedEntry != null && finishedEntry.drivesCamera && cameraMover != null && !obj.isUIObject)
+            cameraMover.EndExternalControl();
 
         var state = pageStates[pageIndex];
         if (state.locked) return;
@@ -155,7 +198,6 @@ public class ClickAnimManager : MonoBehaviour
 
         state.finished.Add(obj);
 
-        var set = pageObjectSets.Find(s => s.pageIndex == pageIndex);
         Debug.Log($"[ClickAnimManager] Page {pageIndex}: {state.finished.Count}/{set.entries.Count} finished");
         if (state.finished.Count >= set.entries.Count)
         {
