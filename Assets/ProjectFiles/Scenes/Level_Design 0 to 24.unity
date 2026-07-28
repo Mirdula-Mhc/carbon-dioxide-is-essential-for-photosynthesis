@@ -2870,6 +2870,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 444149082}
   m_CullTransparentMesh: 1
+--- !u!82 &458396810 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 5775594223999551277, guid: bfdb738bfeaf9754a86794f649e38c2d, type: 3}
+  m_PrefabInstance: {fileID: 953201469}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &459188512
 GameObject:
   m_ObjectHideFlags: 0
@@ -4121,7 +4126,7 @@ MonoBehaviour:
   correctSprite: {fileID: -543965081, guid: e00b76f59c35cb64baf73166e1cf95ac, type: 3}
   wrongSprite: {fileID: 1329716175, guid: 06e67c36e1125504fb978bdce477d003, type: 3}
   questionData: {fileID: 11400000, guid: cc5c84d28730f9d469ccdab3045d467a, type: 2}
-  audioSource: {fileID: 1968636593}
+  audioSource: {fileID: 458396810}
   correctClip: {fileID: 8300000, guid: ddb9b58d2abd67c4e9b146671ce2eb77, type: 3}
   wrongClip: {fileID: 8300000, guid: a762bb80a6ad8e44ba591816638bd09e, type: 3}
   OnCorrectAnswer:
@@ -9358,7 +9363,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1441877346
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10085,7 +10090,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1506582071
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14101,7 +14106,19 @@ MonoBehaviour:
   - {fileID: 228010262}
   onAllCompleted:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2688131115227752448}
+        m_TargetAssemblyTypeName: PageFlowManager, Assembly-CSharp
+        m_MethodName: EnableNextButton
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!225 &2120433234
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -14758,7 +14775,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2791694678924072110, guid: b81672a122e262e45bb925b3d49eb63a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2865541881107979390, guid: b81672a122e262e45bb925b3d49eb63a, type: 3}
       propertyPath: highlightMaterial

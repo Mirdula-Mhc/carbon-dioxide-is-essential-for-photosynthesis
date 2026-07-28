@@ -41,9 +41,9 @@ public class PageFlowManager : MonoBehaviour
     // IMPORTANT:
     // Counter instead of bool because camera + another animation
     // may be running at the same time.
-    private int interactionLockCount = 0;
+    private readonly HashSet<string> interactionLocks = new();
 
-    private bool InteractionLocked => interactionLockCount > 0;
+    private bool InteractionLocked => interactionLocks.Count > 0;
 
     // Completion tracking
     private readonly HashSet<int> completedButtonGroupPages = new();
@@ -76,16 +76,23 @@ public class PageFlowManager : MonoBehaviour
 
         if (currentPage < pages.Count - 1)
         {
-            // Camera movement gets its own lock.
-            if (cameraMover != null)
-                LockInteraction();
+            int targetPage = currentPage + 1;
+            string cameraLock = $"CameraMove_{targetPage}";
 
-            currentPage++;
+            if (cameraMover != null)
+                LockInteraction(cameraLock);
+
+            currentPage = targetPage;
 
             ShowPage(currentPage);
 
             if (cameraMover != null)
-                cameraMover.MoveNext(UnlockInteraction);
+            {
+                cameraMover.MoveNext(() =>
+                {
+                    UnlockInteraction(cameraLock);
+                });
+            }
         }
         else if (nextButton != null && nextButton.interactable)
         {
@@ -104,16 +111,23 @@ public class PageFlowManager : MonoBehaviour
 
         if (currentPage > 0)
         {
-            // Camera movement gets its own lock.
-            if (cameraMover != null)
-                LockInteraction();
+            int targetPage = currentPage - 1;
+            string cameraLock = $"CameraMove_{targetPage}";
 
-            currentPage--;
+            if (cameraMover != null)
+                LockInteraction(cameraLock);
+
+            currentPage = targetPage;
 
             ShowPage(currentPage);
 
             if (cameraMover != null)
-                cameraMover.MovePrevious(UnlockInteraction);
+            {
+                cameraMover.MovePrevious(() =>
+                {
+                    UnlockInteraction(cameraLock);
+                });
+            }
         }
     }
 
@@ -237,7 +251,7 @@ public class PageFlowManager : MonoBehaviour
         Debug.Log(
             $"[PageFlow] Page {currentPage} | " +
             $"Complete={pageComplete} | " +
-            $"Locks={interactionLockCount} | " +
+            $"Locks={interactionLocks.Count} | " +
             $"Auto={isAutoComplete} | " +
             $"ButtonGroup={hasButtonGroup} | " +
             $"ClickAnim={hasClickAnim} | " +
@@ -284,32 +298,31 @@ public class PageFlowManager : MonoBehaviour
     // GLOBAL ANIMATION / CAMERA LOCK
     // =========================================================
 
-    public void LockInteraction()
+    public void LockInteraction(string source)
     {
-        interactionLockCount++;
+        if (string.IsNullOrEmpty(source))
+            return;
+
+        interactionLocks.Add(source);
 
         Debug.Log(
-            $"[PageFlow] LOCK added. Count = {interactionLockCount}"
+            $"[PageFlow] LOCK + {source} | Active locks: " +
+            string.Join(", ", interactionLocks)
         );
 
         RefreshNavigation();
     }
 
-    public void UnlockInteraction()
+    public void UnlockInteraction(string source)
     {
-        interactionLockCount--;
+        if (string.IsNullOrEmpty(source))
+            return;
 
-        if (interactionLockCount < 0)
-        {
-            Debug.LogWarning(
-                "[PageFlow] UnlockInteraction called with no matching lock."
-            );
-
-            interactionLockCount = 0;
-        }
+        bool removed = interactionLocks.Remove(source);
 
         Debug.Log(
-            $"[PageFlow] LOCK removed. Count = {interactionLockCount}"
+            $"[PageFlow] LOCK - {source} | Removed={removed} | Active locks: " +
+            string.Join(", ", interactionLocks)
         );
 
         RefreshNavigation();

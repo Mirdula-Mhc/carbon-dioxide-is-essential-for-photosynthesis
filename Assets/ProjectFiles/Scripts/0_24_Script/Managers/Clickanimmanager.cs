@@ -167,52 +167,71 @@ public class ClickAnimManager : MonoBehaviour
     // callback captures the correct pageIndex/entry pairing.
     void OnObjectClicked(int pageIndex, ObjectEntry entry)
     {
-        // Lock BOTH Next and Previous for this animation.
-        PageFlowManager.Instance?.LockInteraction();
+        string lockID =
+            $"ClickAnim_{pageIndex}_{entry.clickObject.GetInstanceID()}";
+
+        PageFlowManager.Instance?.LockInteraction(lockID);
 
         if (entry.drivesCamera && cameraMover != null)
             cameraMover.BeginExternalControl();
 
         entry.clickObject.TriggerClick(
             entry.animation,
-            () => OnObjectFinished(pageIndex, entry.clickObject),
+            () =>
+            {
+                PageFlowManager.Instance?.UnlockInteraction(lockID);
+
+                OnObjectFinished(
+                    pageIndex,
+                    entry.clickObject
+                );
+            },
             this
         );
     }
 
     void OnObjectFinished(int pageIndex, ClickAnimObject obj)
     {
-        // This specific click animation has finished.
-        PageFlowManager.Instance?.UnlockInteraction();
-
         Debug.Log(
             $"[ClickAnimManager] OnObjectFinished called for page {pageIndex}, " +
             $"object '{obj.name}'"
         );
-        Debug.Log($"[ClickAnimManager] OnObjectFinished called for page {pageIndex}, object '{obj.name}'");
 
-        // 3D path only: OnObjectClicked() below called BeginExternalControl()
-        // directly (it has the ObjectEntry in hand), so end it here to match.
-        // UI path handles its own Begin/End inside ClickAnimObject.OnClickedUI(),
-        // so this would double-call End for UI objects if not guarded - but
-        // EndExternalControl() is idempotent (just sets a bool), so it's safe
-        // either way.
         var set = pageObjectSets.Find(s => s.pageIndex == pageIndex);
         var finishedEntry = set?.entries.Find(e => e.clickObject == obj);
-        if (finishedEntry != null && finishedEntry.drivesCamera && cameraMover != null && !obj.isUIObject)
+
+        if (finishedEntry != null &&
+            finishedEntry.drivesCamera &&
+            cameraMover != null &&
+            !obj.isUIObject)
+        {
             cameraMover.EndExternalControl();
+        }
 
         var state = pageStates[pageIndex];
-        if (state.locked) return;
-        if (state.finished.Contains(obj)) return;
+
+        if (state.locked)
+            return;
+
+        if (state.finished.Contains(obj))
+            return;
 
         state.finished.Add(obj);
 
-        Debug.Log($"[ClickAnimManager] Page {pageIndex}: {state.finished.Count}/{set.entries.Count} finished");
+        Debug.Log(
+            $"[ClickAnimManager] Page {pageIndex}: " +
+            $"{state.finished.Count}/{set.entries.Count} finished"
+        );
+
         if (state.finished.Count >= set.entries.Count)
         {
             state.locked = true;
-            Debug.Log($"[ClickAnimManager] Page {pageIndex} complete - calling OnClickAnimDone()");
+
+            Debug.Log(
+                $"[ClickAnimManager] Page {pageIndex} complete - " +
+                $"calling OnClickAnimDone()"
+            );
+
             PageFlowManager.Instance.OnClickAnimDone();
         }
     }
