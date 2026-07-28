@@ -167,18 +167,28 @@ public class ClickAnimManager : MonoBehaviour
     // callback captures the correct pageIndex/entry pairing.
     void OnObjectClicked(int pageIndex, ObjectEntry entry)
     {
+        // Lock BOTH Next and Previous for this animation.
+        PageFlowManager.Instance?.LockInteraction();
+
         if (entry.drivesCamera && cameraMover != null)
             cameraMover.BeginExternalControl();
 
-        // Pass "this" (ClickAnimManager) as the coroutine host - it
-        // never gets deactivated by a page's Timeline, unlike the
-        // clicked object itself, which some Timelines turn off via
-        // an Activation Track partway through their own playback.
-        entry.clickObject.TriggerClick(entry.animation, () => OnObjectFinished(pageIndex, entry.clickObject), this);
+        entry.clickObject.TriggerClick(
+            entry.animation,
+            () => OnObjectFinished(pageIndex, entry.clickObject),
+            this
+        );
     }
 
     void OnObjectFinished(int pageIndex, ClickAnimObject obj)
     {
+        // This specific click animation has finished.
+        PageFlowManager.Instance?.UnlockInteraction();
+
+        Debug.Log(
+            $"[ClickAnimManager] OnObjectFinished called for page {pageIndex}, " +
+            $"object '{obj.name}'"
+        );
         Debug.Log($"[ClickAnimManager] OnObjectFinished called for page {pageIndex}, object '{obj.name}'");
 
         // 3D path only: OnObjectClicked() below called BeginExternalControl()

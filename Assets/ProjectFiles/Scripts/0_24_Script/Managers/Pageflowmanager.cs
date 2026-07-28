@@ -3,32 +3,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-// -----------------------------------------------------------------
-// Page flow manager, same pattern as PotentiometerPageFlowManager:
-//
-//   - Pages are just indexes into "pages".
-//   - A page's "type" is whichever role-list its index appears in
-//     (e.g. buttonGroupPages, dragDropPages, mcqPages...).
-//   - Independent interaction MANAGERS elsewhere in the scene (like
-//     ButtonGroupManager below) own ALL the pages of their type and
-//     track per-page state internally. When a page under their care
-//     is solved, they call back ONE matching method here, e.g.
-//     OnButtonGroupDone(). This script never reaches into them.
-//   - ShowPage() re-checks every role-list the current index belongs
-//     to; Next stays locked until every relevant role is completed
-//     for that page.
-//
-// To add a new interaction TYPE later (say, drag-drop):
-//   1. Add a new List<int> dragDropPages field.
-//   2. Add a new HashSet<int> completedDragDropPages field.
-//   3. Add one "if (dragDropPages.Contains(index) &&
-//      !completedDragDropPages.Contains(index)) allowNext = false;"
-//      line in ShowPage().
-//   4. Add one public OnDragDropDone() method, same shape as the
-//      others below.
-//   The core loop (Next/Previous/ShowPage/camera) never changes -
-//   only new role lists get added.
-// -----------------------------------------------------------------
 public class PageFlowManager : MonoBehaviour
 {
     public static PageFlowManager Instance { get; private set; }
@@ -49,45 +23,31 @@ public class PageFlowManager : MonoBehaviour
     public CameraMover cameraMover;
 
     [Header("Interaction Managers (optional)")]
-    [Tooltip("Assign if this project has button-group pages. Same role as resistanceBox in the reference project.")]
     public ButtonGroupManager buttonGroupManager;
-
-    [Tooltip("Assign if this project has click-to-animate pages (UI or 3D objects that highlight/animate on click).")]
     public ClickAnimManager clickAnimManager;
-
-    [Tooltip("Assign if some objects should only be visible on specific pages. Not a completion gate - just visibility.")]
     public PageVisibilityManager pageVisibilityManager;
-
-    [Tooltip("Assign if this project has pages that auto-play an animation on enter, blocking Next until it finishes.")]
     public PageEnterAnimManager pageEnterAnimManager;
 
     [Header("Auto Complete Pages")]
-    [Tooltip("Page indexes with nothing to interact with - Next unlocks immediately on entering these, regardless of any manager above.")]
+    [Tooltip("Pages with no interaction. Next unlocks after all active animation locks have finished.")]
     public List<int> autoCompletePages;
 
     [Header("End-of-Flow Handoff (optional)")]
-    [Tooltip("This entire simulation's own root GameObject (i.e. everything under a single parent). Gets SetActive(false) when Next is pressed on the very last page.")]
     public GameObject ownRootObject;
-
-    [Tooltip("The next module/scene's root GameObject. Gets SetActive(true) at the same moment ownRootObject is disabled. Leave both fields empty if this flow doesn't hand off to anything.")]
     public GameObject nextModuleRootObject;
 
+    private int currentPage = 0;
 
+    // IMPORTANT:
+    // Counter instead of bool because camera + another animation
+    // may be running at the same time.
+    private int interactionLockCount = 0;
 
-    int currentPage = 0;
-    bool interactionLocked = false;
+    private bool InteractionLocked => interactionLockCount > 0;
 
-    // =========================================================
-    // COMPLETION TRACKING - one HashSet per interaction manager
-    // type. No separate page-index list needed here - each manager
-    // (e.g. ButtonGroupManager) already knows which pages it owns
-    // via its own OwnsPage(index) check, so PageFlowManager just
-    // asks the manager instead of keeping its own duplicate list.
-    // =========================================================
-    HashSet<int> completedButtonGroupPages = new();
-    HashSet<int> completedClickAnimPages = new();
-    // HashSet<int> completedDragDropPages = new();
-    // HashSet<int> completedMcqPages = new();
+    // Completion tracking
+    private readonly HashSet<int> completedButtonGroupPages = new();
+    private readonly HashSet<int> completedClickAnimPages = new();
 
     void Awake()
     {
@@ -96,19 +56,27 @@ public class PageFlowManager : MonoBehaviour
 
     void Start()
     {
-        nextButton.onClick.AddListener(Next);
-        prevButton.onClick.AddListener(Previous);
+        if (nextButton != null)
+            nextButton.onClick.AddListener(Next);
+
+        if (prevButton != null)
+            prevButton.onClick.AddListener(Previous);
+
         ShowPage(0);
     }
 
+    // =========================================================
+    // NEXT
+    // =========================================================
+
     public void Next()
     {
-        if (interactionLocked)
+        if (InteractionLocked)
             return;
 
         if (currentPage < pages.Count - 1)
         {
-            // Lock BEFORE entering the new page.
+            // Camera movement gets its own lock.
             if (cameraMover != null)
                 LockInteraction();
 
@@ -119,58 +87,24 @@ public class PageFlowManager : MonoBehaviour
             if (cameraMover != null)
                 cameraMover.MoveNext(UnlockInteraction);
         }
-        else if (nextButton.interactable)
+        else if (nextButton != null && nextButton.interactable)
         {
             HandOffToNextModule();
         }
     }
 
-    // Disables this simulation's own root object and enables the next
-    // module's root, if both are assigned. Safe to call even if one or
-    // both are left empty (e.g. this flow doesn't hand off to anything).
-    void HandOffToNextModule()
-    {
-        Debug.Log("[HANDOFF] Starting");
-
-        if (cameraMover != null)
-        {
-            Debug.Log(
-                "[HANDOFF] Module 1 CameraMover camAnimator = " +
-                (cameraMover.camAnimator != null
-                    ? GetHierarchyPath(cameraMover.camAnimator.transform)
-                    : "NULL")
-            );
-
-            cameraMover.PrepareForModuleHandoff();
-        }
-
-        if (nextModuleRootObject != null)
-            nextModuleRootObject.SetActive(true);
-
-        if (ownRootObject != null)
-            ownRootObject.SetActive(false);
-    }
-
-    private string GetHierarchyPath(Transform t)
-    {
-        string path = t.name;
-
-        while (t.parent != null)
-        {
-            t = t.parent;
-            path = t.name + "/" + path;
-        }
-
-        return path;
-    }
+    // =========================================================
+    // PREVIOUS
+    // =========================================================
 
     public void Previous()
     {
-        if (interactionLocked)
+        if (InteractionLocked)
             return;
 
         if (currentPage > 0)
         {
+            // Camera movement gets its own lock.
             if (cameraMover != null)
                 LockInteraction();
 
@@ -182,6 +116,10 @@ public class PageFlowManager : MonoBehaviour
                 cameraMover.MovePrevious(UnlockInteraction);
         }
     }
+
+    // =========================================================
+    // PAGE DISPLAY
+    // =========================================================
 
     void ShowPage(int index)
     {
@@ -197,25 +135,37 @@ public class PageFlowManager : MonoBehaviour
         pageEnterAnimManager?.SetPageContext(index);
 
         UpdatePageCounter();
-
         RefreshNavigation();
     }
+
+    // =========================================================
+    // PAGE COUNTER
+    // =========================================================
+
     void UpdatePageCounter()
     {
         if (pageCounterText == null)
             return;
 
         int displayedPage = currentPage + pageOffset;
-
         pageCounterText.text = $"{displayedPage}/{totalPageCount}";
     }
+
+    // =========================================================
+    // NAVIGATION STATE
+    // =========================================================
+
     void RefreshNavigation()
     {
-        // During camera movement, both navigation buttons stay locked.
-        if (interactionLocked)
+        // Any animation/camera lock disables BOTH buttons.
+        if (InteractionLocked)
         {
-            nextButton.interactable = false;
-            prevButton.interactable = false;
+            if (nextButton != null)
+                nextButton.interactable = false;
+
+            if (prevButton != null)
+                prevButton.interactable = false;
+
             return;
         }
 
@@ -240,10 +190,9 @@ public class PageFlowManager : MonoBehaviour
             hasClickAnim ||
             hasPageEnterAnim;
 
-        // LOCKED BY DEFAULT.
+        // Locked by default.
         bool pageComplete = false;
 
-        // Explicitly configured as a no-interaction page.
         if (isAutoComplete)
         {
             pageComplete = true;
@@ -274,37 +223,38 @@ public class PageFlowManager : MonoBehaviour
         {
             Debug.LogWarning(
                 $"[PageFlowManager] Page {currentPage} has NO completion rule. " +
-                "Next remains locked. Add it to Auto Complete Pages or configure an interaction."
+                "Next remains locked. Add it to Auto Complete Pages " +
+                "or configure an interaction."
             );
         }
 
-        nextButton.interactable = pageComplete;
+        if (nextButton != null)
+            nextButton.interactable = pageComplete;
 
-        // Previous is based on navigation position,
-        // not whether the current page has been completed.
-        prevButton.interactable = currentPage > 0;
+        if (prevButton != null)
+            prevButton.interactable = currentPage > 0;
 
         Debug.Log(
             $"[PageFlow] Page {currentPage} | " +
             $"Complete={pageComplete} | " +
+            $"Locks={interactionLockCount} | " +
             $"Auto={isAutoComplete} | " +
             $"ButtonGroup={hasButtonGroup} | " +
             $"ClickAnim={hasClickAnim} | " +
             $"EnterAnim={hasPageEnterAnim}"
         );
     }
+
     // =========================================================
-    // EVENTS FROM INTERACTION MANAGERS
-    // Each interaction manager calls its matching method here when
-    // ITS current page is done. That's the entire integration
-    // surface - nothing else to wire.
+    // COMPLETION EVENTS
     // =========================================================
+
     public void OnButtonGroupDone()
     {
         completedButtonGroupPages.Add(currentPage);
 
         Debug.Log(
-            $"[PageFlow] Button group gate completed for page {currentPage}"
+            $"[PageFlow] Button group completed on page {currentPage}"
         );
 
         RefreshNavigation();
@@ -315,7 +265,7 @@ public class PageFlowManager : MonoBehaviour
         completedClickAnimPages.Add(currentPage);
 
         Debug.Log(
-            $"[PageFlow] Click animation gate completed for page {currentPage}"
+            $"[PageFlow] Click animation gate completed on page {currentPage}"
         );
 
         RefreshNavigation();
@@ -324,36 +274,102 @@ public class PageFlowManager : MonoBehaviour
     public void OnPageEnterAnimDone()
     {
         Debug.Log(
-            $"[PageFlow] Page-enter animation gate completed for page {currentPage}"
+            $"[PageFlow] Page-enter animation gate completed on page {currentPage}"
         );
 
         RefreshNavigation();
     }
 
-    // Add more On___Done() methods here as new interaction types
-    // get built, e.g.:
-    // public void OnDragDropDone()
-    // {
-    //     completedDragDropPages.Add(currentPage);
-    //     ShowPage(currentPage);
-    // }
+    // =========================================================
+    // GLOBAL ANIMATION / CAMERA LOCK
+    // =========================================================
 
-    // =========================================================
-    // Optional external lock (e.g. while an animation plays)
-    // =========================================================
-    void LockInteraction()
+    public void LockInteraction()
     {
-        interactionLocked = true;
+        interactionLockCount++;
+
+        Debug.Log(
+            $"[PageFlow] LOCK added. Count = {interactionLockCount}"
+        );
+
         RefreshNavigation();
     }
 
-    void UnlockInteraction()
+    public void UnlockInteraction()
     {
-        interactionLocked = false;
+        interactionLockCount--;
+
+        if (interactionLockCount < 0)
+        {
+            Debug.LogWarning(
+                "[PageFlow] UnlockInteraction called with no matching lock."
+            );
+
+            interactionLockCount = 0;
+        }
+
+        Debug.Log(
+            $"[PageFlow] LOCK removed. Count = {interactionLockCount}"
+        );
+
         RefreshNavigation();
+    }
+
+    // =========================================================
+    // EXTERNAL NEXT ENABLE
+    // =========================================================
+
+    public void EnableNextButton()
+    {
+        // Do not allow an external script to enable Next
+        // while an animation/camera movement is still running.
+        if (InteractionLocked)
+            return;
+
+        if (nextButton != null)
+            nextButton.interactable = true;
+    }
+
+    // =========================================================
+    // MODULE HANDOFF
+    // =========================================================
+
+    void HandOffToNextModule()
+    {
+        Debug.Log("[HANDOFF] Starting");
+
+        if (cameraMover != null)
+        {
+            Debug.Log(
+                "[HANDOFF] Module 1 CameraMover camAnimator = " +
+                (cameraMover.camAnimator != null
+                    ? GetHierarchyPath(cameraMover.camAnimator.transform)
+                    : "NULL")
+            );
+
+            // KEEP the camera fix.
+            cameraMover.PrepareForModuleHandoff();
+        }
+
+        if (nextModuleRootObject != null)
+            nextModuleRootObject.SetActive(true);
+
+        if (ownRootObject != null)
+            ownRootObject.SetActive(false);
+    }
+
+    private string GetHierarchyPath(Transform t)
+    {
+        string path = t.name;
+
+        while (t.parent != null)
+        {
+            t = t.parent;
+            path = t.name + "/" + path;
+        }
+
+        return path;
     }
 
     public int CurrentPage => currentPage;
-
-
 }
