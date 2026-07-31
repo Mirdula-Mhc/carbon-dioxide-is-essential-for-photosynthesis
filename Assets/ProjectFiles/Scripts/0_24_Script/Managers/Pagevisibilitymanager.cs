@@ -36,10 +36,8 @@ public class PageVisibilityManager : MonoBehaviour
     public List<PageObjectSet> pageDisabledObjectSets;
 
 
-    void Start()
+    void Awake()
     {
-        // Hide all objects controlled by the normal
-        // per-page visibility system at startup.
         if (pageObjectSets != null)
         {
             foreach (var set in pageObjectSets)

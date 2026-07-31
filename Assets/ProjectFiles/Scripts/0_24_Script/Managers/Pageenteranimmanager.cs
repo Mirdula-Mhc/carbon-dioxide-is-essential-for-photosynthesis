@@ -1,119 +1,272 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-// -----------------------------------------------------------------
-// A MANAGER, same relationship to PageFlowManager as
-// ButtonGroupManager/ClickAnimManager: owns every page that needs an
-// animation to auto-play on entry, tracks per-page completion, and
-// calls back PageFlowManager.Instance.OnPageEnterAnimDone() once
-// every animation on the current page has finished.
-//
-// Unlike ClickAnimManager, there's no click detection or highlight -
-// the animation(s) start immediately when SetPageContext() is called
-// for that page.
-//
-// Setup:
-//   1. One PageEnterAnimManager in the scene.
-//   2. In "pageAnimSets", add one entry per page that should
-//      auto-play something on enter. Each page can have MULTIPLE
-//      AnimationSources if more than one thing should play at once -
-//      Next unlocks once ALL of them finish.
-//   3. Drag this into PageFlowManager's "Page Enter Anim Manager"
-//      field.
-//   Revisiting an already-completed page does NOT replay the
-//   animation by default (see ReplayOnRevisit below) - it just shows
-//   Next as already unlocked, same as ButtonGroupManager restoring a
-//   solved page's state.
-// -----------------------------------------------------------------
 public class PageEnterAnimManager : MonoBehaviour
 {
     [System.Serializable]
     public class PageAnimSet
     {
         public int pageIndex;
-        public List<AnimationSource> animations;
-        [Tooltip("If true, revisiting this page (e.g. via Previous then Next again) replays the animation(s) and re-locks Next until they finish again. If false, an already-completed page stays unlocked on revisit.")]
+
+        public List<AnimationSource> animations =
+            new List<AnimationSource>();
+
+        [Tooltip(
+            "If enabled, revisiting this page replays its animations."
+        )]
         public bool replayOnRevisit = false;
     }
 
     [Header("Per-Page Auto-Play Animations")]
-    public List<PageAnimSet> pageAnimSets;
+    public List<PageAnimSet> pageAnimSets =
+        new List<PageAnimSet>();
 
-    class PageState
+    private class PageState
     {
-        public bool locked;
+        public bool playing;
+        public bool completed;
         public int finishedCount;
+        public int expectedCount;
     }
 
-    Dictionary<int, PageState> pageStates = new();
+    private readonly Dictionary<int, PageState> pageStates =
+        new Dictionary<int, PageState>();
 
-    void Start()
+    private int lastPageIndex = -1;
+
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
+
+    private void Awake()
     {
-        foreach (var set in pageAnimSets)
-            pageStates[set.pageIndex] = new PageState();
+        BuildStates();
     }
 
-    int lastPageIndex = -1;
-
-    // Called by PageFlowManager.ShowPage() every time the active
-    // page changes.
-    public void SetPageContext(int pageIndex)
+    private void BuildStates()
     {
-        // ShowPage() gets called again internally right after this
-        // page's own OnPageEnterAnimDone() fires (to refresh Next's
-        // interactable state) - without this guard, that re-call would
-        // immediately restart the animation when replayOnRevisit is
-        // true, looping forever. Only run the start logic below on an
-        // ACTUAL change of page.
-        bool isActualPageChange = pageIndex != lastPageIndex;
-        lastPageIndex = pageIndex;
+        pageStates.Clear();
 
-        if (!pageStates.TryGetValue(pageIndex, out var state)) return; // not a page-enter-anim page
-        if (!isActualPageChange) return;
+        if (pageAnimSets == null)
+            return;
 
-        var set = pageAnimSets.Find(s => s.pageIndex == pageIndex);
-        if (set == null || set.animations == null || set.animations.Count == 0) return;
-
-        bool alreadyDone = state.finishedCount >= set.animations.Count;
-
-        if (alreadyDone && !set.replayOnRevisit)
-            return; // stay unlocked, don't replay
-
-        // (Re)start this page's animations from scratch.
-        state.locked = true;
-        state.finishedCount = 0;
-
-        foreach (var anim in set.animations)
+        foreach (PageAnimSet set in pageAnimSets)
         {
-            if (anim == null) continue;
-            StartCoroutine(anim.Play(this, () => OnOneFinished(pageIndex, set)));
+            if (set == null)
+                continue;
+
+            if (!pageStates.ContainsKey(set.pageIndex))
+                pageStates.Add(set.pageIndex, new PageState());
         }
     }
 
-    // Lets PageFlowManager check "does this page belong to me".
+    // =========================================================
+    // PAGE CONTEXT
+    // =========================================================
+
+    public void SetPageContext(int pageIndex)
+    {
+        bool actualPageChange =
+            pageIndex != lastPageIndex;
+
+        lastPageIndex = pageIndex;
+
+        if (!pageStates.TryGetValue(
+            pageIndex,
+            out PageState state))
+        {
+            return;
+        }
+
+        if (!actualPageChange)
+            return;
+
+        PageAnimSet set =
+            pageAnimSets.Find(x => x.pageIndex == pageIndex);
+
+        if (set == null)
+            return;
+
+        int validAnimationCount = CountValidAnimations(set);
+
+        // Nothing configured = automatically complete.
+        if (validAnimationCount == 0)
+        {
+            state.completed = true;
+            state.playing = false;
+            state.finishedCount = 0;
+            state.expectedCount = 0;
+
+            return;
+        }
+
+        // Already completed and shouldn't replay.
+        if (state.completed && !set.replayOnRevisit)
+            return;
+
+        StartPageAnimations(
+            pageIndex,
+            set,
+            state,
+            validAnimationCount
+        );
+    }
+
+    // =========================================================
+    // START
+    // =========================================================
+
+    private void StartPageAnimations(
+        int pageIndex,
+        PageAnimSet set,
+        PageState state,
+        int validAnimationCount)
+    {
+        state.playing = true;
+        state.completed = false;
+        state.finishedCount = 0;
+        state.expectedCount = validAnimationCount;
+
+        string lockID = GetLockID(pageIndex);
+
+        // THIS is the missing part:
+        // lock BOTH navigation buttons while page-enter animation runs.
+        PageFlowManager.Instance?.LockInteraction(lockID);
+
+        foreach (AnimationSource animation in set.animations)
+        {
+            if (!IsValid(animation))
+                continue;
+
+            AnimationSource capturedAnimation = animation;
+
+            StartCoroutine(
+                capturedAnimation.Play(
+                    this,
+                    () => OnOneFinished(pageIndex)
+                )
+            );
+        }
+    }
+
+    // =========================================================
+    // COMPLETION
+    // =========================================================
+
+    private void OnOneFinished(int pageIndex)
+    {
+        if (!pageStates.TryGetValue(
+            pageIndex,
+            out PageState state))
+        {
+            return;
+        }
+
+        if (!state.playing)
+            return;
+
+        state.finishedCount++;
+
+        Debug.Log(
+            $"[PageEnterAnimManager] Page {pageIndex}: " +
+            $"{state.finishedCount}/{state.expectedCount} finished."
+        );
+
+        if (state.finishedCount < state.expectedCount)
+            return;
+
+        state.playing = false;
+        state.completed = true;
+
+        string lockID = GetLockID(pageIndex);
+
+        // Release Previous + Next.
+        PageFlowManager.Instance?.UnlockInteraction(lockID);
+
+        // Tell PageFlowManager this gate is complete.
+        PageFlowManager.Instance?.OnPageEnterAnimDone();
+
+        Debug.Log(
+            $"[PageEnterAnimManager] Page {pageIndex} complete."
+        );
+    }
+
+    // =========================================================
+    // PAGE FLOW QUERIES
+    // =========================================================
+
     public bool OwnsPage(int pageIndex)
     {
         return pageStates.ContainsKey(pageIndex);
     }
 
-    // "Complete" for the purposes of PageFlowManager's gate check.
     public bool IsPageDone(int pageIndex)
     {
-        if (!pageStates.TryGetValue(pageIndex, out var state)) return true; // not owned = not a gate
-        var set = pageAnimSets.Find(s => s.pageIndex == pageIndex);
-        if (set == null || set.animations == null || set.animations.Count == 0) return true;
-        return state.finishedCount >= set.animations.Count;
+        if (!pageStates.TryGetValue(
+            pageIndex,
+            out PageState state))
+        {
+            return true;
+        }
+
+        PageAnimSet set =
+            pageAnimSets.Find(x => x.pageIndex == pageIndex);
+
+        if (set == null)
+            return true;
+
+        if (CountValidAnimations(set) == 0)
+            return true;
+
+        return state.completed;
     }
 
-    void OnOneFinished(int pageIndex, PageAnimSet set)
+    public bool IsPagePlaying(int pageIndex)
     {
-        var state = pageStates[pageIndex];
-        state.finishedCount++;
-
-        if (state.finishedCount >= set.animations.Count)
+        if (!pageStates.TryGetValue(
+            pageIndex,
+            out PageState state))
         {
-            state.locked = false;
-            PageFlowManager.Instance.OnPageEnterAnimDone();
+            return false;
         }
+
+        return state.playing;
+    }
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+
+    private int CountValidAnimations(PageAnimSet set)
+    {
+        if (set == null || set.animations == null)
+            return 0;
+
+        int count = 0;
+
+        foreach (AnimationSource animation in set.animations)
+        {
+            if (IsValid(animation))
+                count++;
+        }
+
+        return count;
+    }
+
+    private bool IsValid(AnimationSource source)
+    {
+        if (source == null)
+            return false;
+
+        if (source.director != null)
+            return true;
+
+        return source.animator != null &&
+               source.clip != null;
+    }
+
+    private string GetLockID(int pageIndex)
+    {
+        return $"PageEnterAnim_{pageIndex}";
     }
 }

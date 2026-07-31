@@ -38,16 +38,37 @@ public class PageFlowManager : MonoBehaviour
 
     private int currentPage = 0;
 
-    // IMPORTANT:
-    // Counter instead of bool because camera + another animation
-    // may be running at the same time.
+    // Camera / animation locks.
     private readonly HashSet<string> interactionLocks = new();
 
     private bool InteractionLocked => interactionLocks.Count > 0;
 
-    // Completion tracking
+    // =========================================================
+    // COMPLETION TRACKING
+    // =========================================================
+
     private readonly HashSet<int> completedButtonGroupPages = new();
     private readonly HashSet<int> completedClickAnimPages = new();
+
+    // NEW:
+    // Used by external interactions such as your existing MCQ prefab.
+    //
+    // When the correct MCQ answer calls EnableNextButton(),
+    // the current page is stored here permanently for this run.
+    //
+    // Therefore:
+    //
+    // Correct MCQ
+    // -> Next enabled
+    // -> Go forward
+    // -> Come back
+    // -> Next is still enabled.
+    //
+    private readonly HashSet<int> externallyCompletedPages = new();
+
+    // =========================================================
+    // UNITY
+    // =========================================================
 
     void Awake()
     {
@@ -162,7 +183,9 @@ public class PageFlowManager : MonoBehaviour
             return;
 
         int displayedPage = currentPage + pageOffset;
-        pageCounterText.text = $"{displayedPage}/{totalPageCount}";
+
+        pageCounterText.text =
+            $"{displayedPage}/{totalPageCount}";
     }
 
     // =========================================================
@@ -171,7 +194,12 @@ public class PageFlowManager : MonoBehaviour
 
     void RefreshNavigation()
     {
-        // Any animation/camera lock disables BOTH buttons.
+        // -----------------------------------------------------
+        // GLOBAL LOCK
+        // -----------------------------------------------------
+        // Camera movement / animations disable BOTH buttons.
+        // -----------------------------------------------------
+
         if (InteractionLocked)
         {
             if (nextButton != null)
@@ -182,6 +210,10 @@ public class PageFlowManager : MonoBehaviour
 
             return;
         }
+
+        // -----------------------------------------------------
+        // PAGE TYPES
+        // -----------------------------------------------------
 
         bool isAutoComplete =
             autoCompletePages != null &&
@@ -199,6 +231,12 @@ public class PageFlowManager : MonoBehaviour
             pageEnterAnimManager != null &&
             pageEnterAnimManager.OwnsPage(currentPage);
 
+        // NEW:
+        // MCQ / external interaction has already completed
+        // this page.
+        bool externallyCompleted =
+            externallyCompletedPages.Contains(currentPage);
+
         bool hasAnyGate =
             hasButtonGroup ||
             hasClickAnim ||
@@ -207,10 +245,36 @@ public class PageFlowManager : MonoBehaviour
         // Locked by default.
         bool pageComplete = false;
 
-        if (isAutoComplete)
+        // =====================================================
+        // EXTERNAL COMPLETION
+        // =====================================================
+        //
+        // This is checked FIRST.
+        //
+        // Your MCQ prefab calls EnableNextButton() when the
+        // correct answer is selected.
+        //
+        // Once that happens, this page remains complete.
+        // =====================================================
+
+        if (externallyCompleted)
         {
             pageComplete = true;
         }
+
+        // =====================================================
+        // AUTO COMPLETE
+        // =====================================================
+
+        else if (isAutoComplete)
+        {
+            pageComplete = true;
+        }
+
+        // =====================================================
+        // MANAGER GATES
+        // =====================================================
+
         else if (hasAnyGate)
         {
             pageComplete = true;
@@ -233,6 +297,11 @@ public class PageFlowManager : MonoBehaviour
                 pageComplete = false;
             }
         }
+
+        // =====================================================
+        // NO COMPLETION RULE
+        // =====================================================
+
         else
         {
             Debug.LogWarning(
@@ -241,6 +310,10 @@ public class PageFlowManager : MonoBehaviour
                 "or configure an interaction."
             );
         }
+
+        // =====================================================
+        // APPLY BUTTON STATE
+        // =====================================================
 
         if (nextButton != null)
             nextButton.interactable = pageComplete;
@@ -253,6 +326,7 @@ public class PageFlowManager : MonoBehaviour
             $"Complete={pageComplete} | " +
             $"Locks={interactionLocks.Count} | " +
             $"Auto={isAutoComplete} | " +
+            $"External={externallyCompleted} | " +
             $"ButtonGroup={hasButtonGroup} | " +
             $"ClickAnim={hasClickAnim} | " +
             $"EnterAnim={hasPageEnterAnim}"
@@ -334,13 +408,33 @@ public class PageFlowManager : MonoBehaviour
 
     public void EnableNextButton()
     {
-        // Do not allow an external script to enable Next
-        // while an animation/camera movement is still running.
-        if (InteractionLocked)
-            return;
+        // =====================================================
+        // FIX:
+        // Remember that the current page has been completed.
+        //
+        // Your existing MCQ prefab already calls this method
+        // from the CORRECT option's OnClick.
+        //
+        // Previously:
+        //
+        // nextButton.interactable = true
+        //
+        // only changed the Button temporarily.
+        //
+        // ShowPage() later called RefreshNavigation(), which
+        // recalculated the page and locked it again.
+        //
+        // Now the completion itself is stored.
+        // =====================================================
 
-        if (nextButton != null)
-            nextButton.interactable = true;
+        externallyCompletedPages.Add(currentPage);
+
+        Debug.Log(
+            $"[PageFlow] External completion registered " +
+            $"for page {currentPage}"
+        );
+
+        RefreshNavigation();
     }
 
     // =========================================================
@@ -360,7 +454,7 @@ public class PageFlowManager : MonoBehaviour
                     : "NULL")
             );
 
-            // KEEP the camera fix.
+            // KEEP the existing camera handoff fix.
             cameraMover.PrepareForModuleHandoff();
         }
 
@@ -383,6 +477,10 @@ public class PageFlowManager : MonoBehaviour
 
         return path;
     }
+
+    // =========================================================
+    // PUBLIC PAGE INDEX
+    // =========================================================
 
     public int CurrentPage => currentPage;
 }
