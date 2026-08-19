@@ -3,29 +3,37 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 
 // -----------------------------------------------------------------
-// ONLY job: watch a set of buttons for THIS page, and call
-// PageFlowManager.Instance.ReportProgress() once per distinct
-// button pressed. Nothing else - no knowledge of pages, gates,
-// cameras, or navigation.
+// ONLY job: watch a set of buttons for THIS page, and lock/unlock
+// Next on PageFlowManager accordingly. Nothing else - no knowledge
+// of other pages, cameras, or navigation.
 //
 // Setup:
 //   1. Put this on a child object under the page that has buttons
 //      (so it activates/deactivates along with the page automatically).
 //   2. Drag that page's buttons into "buttons".
-//   3. On PageFlowManager's Page entry for this page: autoComplete
-//      OFF, requiredCount = however many presses you want to require
-//      (usually buttons.Count, but can be fewer).
+//   3. Set "requiredCount" to however many presses you want to
+//      require (usually leave at 0, which defaults to buttons.Count).
+//   4. Do NOT also add this page to ButtonGroupManager - use one
+//      system or the other per page, not both.
 // -----------------------------------------------------------------
 public class PageButtonGroup : MonoBehaviour
 {
     public List<Button> buttons = new List<Button>();
 
-    private HashSet<Button> pressed = new HashSet<Button>();
+    [Tooltip("How many distinct button presses are required. Leave at 0 to require all buttons.")]
+    public int requiredCount = 0;
+
+    HashSet<Button> pressed = new HashSet<Button>();
+    bool wired = false;
 
     void Awake()
     {
+        if (wired) return;
+        wired = true;
+
         foreach (var b in buttons)
         {
+            if (b == null) continue;
             var captured = b;
             captured.onClick.AddListener(() => OnButtonPressed(captured));
         }
@@ -33,10 +41,12 @@ public class PageButtonGroup : MonoBehaviour
 
     void OnEnable()
     {
-        // fresh start each time this page is (re)entered
+        // Fresh start each time this page is (re)entered.
         pressed.Clear();
         foreach (var b in buttons)
             if (b != null) b.interactable = true;
+
+        PageFlowManager.Instance.LockInteraction();
     }
 
     void OnButtonPressed(Button b)
@@ -44,6 +54,11 @@ public class PageButtonGroup : MonoBehaviour
         if (pressed.Contains(b)) return; // ignore repeat clicks on the same button
 
         pressed.Add(b);
-        PageFlowManager.Instance.ReportProgress();
+
+        int target = requiredCount > 0 ? requiredCount : buttons.Count;
+        if (pressed.Count >= target)
+        {
+            PageFlowManager.Instance.UnlockInteraction();
+        }
     }
 }
